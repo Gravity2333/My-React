@@ -1,4 +1,4 @@
-import { IDeadline } from "./utils/polyfill"
+import { IDeadline } from "../lib/polyfill"
 
 const { polyfillRequestIdleCallback } = require("./utils/polyfill")
 
