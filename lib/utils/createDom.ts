@@ -1,10 +1,9 @@
-/**
- * 根据IElement对象，生成dom节点
- */
-
 import { DOMType, IElement, _TEXT_ELEMENT_ } from "../typings";
 import updateProps from "./updateProps";
 
+/**
+ * 根据IElement对象，生成dom节点
+ */
 export default function createDom(element: IElement): DOMType {
   let dom: DOMType;
   if (element.type === _TEXT_ELEMENT_) {
@@ -17,6 +16,6 @@ export default function createDom(element: IElement): DOMType {
 
   // 更新props
   updateProps(dom, {}, element.props);
-  
+
   return dom;
 }

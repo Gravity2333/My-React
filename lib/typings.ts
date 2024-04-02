@@ -7,7 +7,8 @@ export interface IElement {
 }
 export const _ELEMENT_ = "_element_";
 export const _TEXT_ELEMENT_ = "_text_element_";
-export type DOMType = HTMLElement | Text;
+export type DOMType = HTMLElement | Text | Element;
+
 export enum EffectTag {
   // 新增节点
   "PLACEMENT" = "PLACEMENT",

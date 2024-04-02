@@ -21,8 +21,8 @@ const isGone = (nextProps: ElementProps) => (key) => !(key in nextProps);
  */
 export default function updateProps(
   dom: DOMType,
-  oldProps: ElementProps,
-  nextProps: ElementProps
+  oldProps: ElementProps = {},
+  nextProps: ElementProps = {}
 ) {
   /** 处理事件 */
   /** 1.删除掉在nextProps中，已经不存在 或者发生变化的 oldProps中的事件 */
