@@ -31,7 +31,7 @@ export default function updateProps(
     .filter((k) => isChange(oldProps, nextProps)(k) || isGone(nextProps)(k))
     .forEach((k) => {
       // 移除有变更的事件
-      const eventType = oldProps[k]?.toLowerCase()?.slice(2);
+      const eventType = k.toLowerCase()?.slice(2);
       dom.removeEventListener(eventType, oldProps[k]);
     });
 
@@ -41,8 +41,8 @@ export default function updateProps(
     .filter(isChange(oldProps, nextProps))
     .forEach((k) => {
       // 注册有变更的事件
-      const eventType = oldProps[k]?.toLowerCase()?.slice(2);
-      dom.addEventListener(eventType, oldProps[k]);
+      const eventType = k.toLowerCase()?.slice(2);
+      dom.addEventListener(eventType, nextProps[k]);
     });
 
   /** 处理属性 */
