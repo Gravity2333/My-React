@@ -6,6 +6,7 @@ import {
   _TEXT_ELEMENT_,
 } from "./typings";
 
+/** 用来创建文本节点 */
 export function createTextElement(text: string): IElement {
   return {
     type: _TEXT_ELEMENT_,
@@ -15,6 +16,7 @@ export function createTextElement(text: string): IElement {
   };
 }
 
+/** 用来创建节点 */
 export function createElement(
   type: ElementType,
   props: ElementProps,

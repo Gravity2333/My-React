@@ -1,8 +1,13 @@
 import { IDeadline } from "../lib/polyfill"
+import { IElement } from "./typings"
 
 const { polyfillRequestIdleCallback } = require("./utils/polyfill")
 
-// polyfill
+/**
+ *  polyfill requestIdleCallback函数 
+ *   防止某些浏览器环境不支持此方法 如:safiri 
+ *   具体可以查看 whatCanIUse
+ */
 polyfillRequestIdleCallback()
 
 // // 调度
@@ -16,6 +21,6 @@ polyfillRequestIdleCallback()
 // }
 // window.requestIdleCallback(scheduler)
 
-export function render() {
+export function render(root: IElement,container: HTMLElement) {
     //TODO
 }
