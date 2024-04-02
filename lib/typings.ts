@@ -2,7 +2,7 @@ export type ElementType = string | Function;
 export type ElementProps = Record<string, any>;
 export type ElementChildren = IElement | string;
 export interface IElement {
-  type: ElementType;
+  type?: ElementType;
   props: ElementProps;
 }
 export const _ELEMENT_ = "_element_";
@@ -27,7 +27,7 @@ export interface IFiber extends IElement {
   // 当前fiber节点的child元素
   child?: IFiber;
   // effectTag 副作用标签 用来commit
-  effectTag: EffectTag;
+  effectTag?: EffectTag;
   // alternate 指向旧的Fiber节点 (reconcile前的Fiber)
   alternate?: IFiber;
   // memorizedState 用来记录hooks信息
