@@ -27,6 +27,7 @@ export default function reconcile(
         effectTag: EffectTag.UPDATE,
         returns: currentFiber,
         alternate: oldChild,
+        memorizedState: oldChild.memorizedState,
       };
     }
 

@@ -14,13 +14,18 @@ polyfillRequestIdleCallback();
 
 // 全局工作变量定义
 // 下一个待处理节点
-let nextUnitOfWork: IFiber | null = null;
+export let nextUnitOfWork: IFiber | null = null;
+// 是否第一次加载
+export let isMount: boolean = true
+/** 重新渲染界面 */
+export let reRender: any;
 // 待挂载的Fiber Tree Root , 用来控制调度
 let workInProgressRoot: IFiber | null = null;
 // 记录上一次Fiber Tree
 let lastFiberRoot: IFiber | null = null;
 // 待删除节点
 let delection: IFiber[] = [];
+
 
 // 处理普通节点
 function performCommonUnit() {
@@ -75,14 +80,19 @@ function performUnitOfWork(): IFiber | null {
 function commit() {
   // 先删除delection
   handleDelection(delection)
+  // 更新dom
   updateDom(workInProgressRoot);
   // 记录上一次fiber tree
   lastFiberRoot = workInProgressRoot;
   // 待挂载的Fiber Tree Root置为空
   workInProgressRoot = null;
+  // 修改isMount
+  isMount = false
 }
 
+/** 渲染界面 */
 function render(elements: IElement, container: DOMType) {
+  reRender = render.bind(null, elements, container)
   /* 创建初始Fiber节点,elements作为其子节点 */
   workInProgressRoot = nextUnitOfWork = {
     dom: container,
@@ -94,9 +104,11 @@ function render(elements: IElement, container: DOMType) {
   };
 }
 
+
+
 // 调度函数
 const scheduler = (deadline: IDeadline) => {
-  while(!deadline.didTimeout && deadline.timeRemaining() > 0 && nextUnitOfWork) {
+  while (!deadline.didTimeout && deadline.timeRemaining() > 0 && nextUnitOfWork) {
     // 如果还有空闲时间 AND 还有待处理的Fiber节点，则处理Fiber节点
     nextUnitOfWork = performUnitOfWork();
   }

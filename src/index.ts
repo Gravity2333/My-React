@@ -1,45 +1,39 @@
 import { createElement } from "../lib/React";
 import { render } from "../lib/ReactDom";
+import useState from "../lib/hooks/useState";
 
-function Counter() {
-  const handleAdd = (num: number) => {
-    Counter.value += num;
-    reload();
+function App() {
+  const [value, setValue] = useState(10);
+  const [user, setUser] = useState("TEST");
+
+  const handleAdd = (number) => {
+    setValue((prev) => prev + number);
   };
-  const handleSub = (num: number) => {
-    Counter.value -= num;
-    reload();
+
+  const handleMinus = (number) => {
+    setValue((prev) => prev - number);
+  };
+
+  const handeleInput = (e) => {
+    setUser(e.target.value);
   };
 
   return createElement("div", {}, [
-    createElement("h2", {}, ["Counter:", String(Counter.value)]),
-    Counter.value > 20
-      ? createElement("h3", { style: "color:green" }, ["counter>20"])
-      : createElement("h3", { style: "color:red" }, ["counter<20"]),
     createElement("div", {}, [
-      createElement("button", { onClick: () => handleAdd(1) }, ["+1"]),
-      createElement("button", { onClick: () => handleSub(1) }, ["-1"]),
+      createElement("h2", {}, ["计数器:", value]),
+      createElement("button", { onClick: handleAdd.bind(null, 1) }, ["+1"]),
+      createElement("button", { onClick: handleAdd.bind(null, 5) }, ["+5"]),
+      createElement("button", { onClick: handleAdd.bind(null, 8) }, ["+8"]),
+      createElement("button", { onClick: handleMinus.bind(null, 1) }, ["-1"]),
+      createElement("button", { onClick: handleMinus.bind(null, 5) }, ["-5"]),
+      createElement("button", { onClick: handleMinus.bind(null, 8) }, ["-8"]),
     ]),
-  ]);
-}
-
-Counter.value = 10;
-
-function App() {
-  return createElement("div", { style: "color:gray;" }, [
-    createElement("h2", {}, ["hello"]),
-    createElement("h2", {}, ["world"]),
     createElement("div", {}, [
-      createElement("a", { href: "https://www.baidu.com" }, [
-        "百度一下,你就知道!",
-      ]),
-      createElement(Counter, {}, []),
+      createElement("input", { value: user, onInput: handeleInput }, []),
+      createElement("h2", { style: "color:pink" }, ["输入框值:", user]),
     ]),
   ]);
 }
 
 render(createElement(App, {}, []), document.querySelector("#root-master"));
 
-function reload() {
-  render(createElement(App, {}, []), document.querySelector("#root-master"));
-}

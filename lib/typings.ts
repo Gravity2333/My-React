@@ -18,6 +18,19 @@ export enum EffectTag {
   "DELECTION" = "DELECTION",
 }
 
+export type MemorizedTask = {
+  action: any,
+  next: MemorizedTask | null,
+}
+
+export interface MemorizedState {
+  memorizedState: any,
+  queue: {
+    pending: MemorizedTask
+  },
+  next: MemorizedState | null
+}
+
 export interface IFiber extends IElement {
   // 当前fiber节点的dom元素
   dom?: DOMType;
@@ -32,5 +45,5 @@ export interface IFiber extends IElement {
   // alternate 指向旧的Fiber节点 (reconcile前的Fiber)
   alternate?: IFiber;
   // memorizedState 用来记录hooks信息
-  memorizedState?: any;
+  memorizedState?: MemorizedState
 }
