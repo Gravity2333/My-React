@@ -7,7 +7,7 @@ export interface IElement {
 }
 export const _ELEMENT_ = "_element_";
 export const _TEXT_ELEMENT_ = "_text_element_";
-
+export type DOMType = HTMLElement | Text;
 export enum EffectTag {
   // 新增节点
   "PLACEMENT" = "PLACEMENT",
@@ -19,7 +19,7 @@ export enum EffectTag {
 
 export interface IFiber extends IElement {
   // 当前fiber节点的dom元素
-  dom?: HTMLElement;
+  dom?: DOMType;
   // 当前fiber节点的父元素
   returns?: IFiber;
   // 当前fiber节点的兄弟元素

@@ -1,5 +1,6 @@
-import { IDeadline } from "../lib/polyfill";
-import { IElement, IFiber } from "./typings";
+import { IDeadline } from "./utils/polyfill";
+import { DOMType, IElement, IFiber } from "./typings";
+import createDom from "./utils/createDom";
 
 const { polyfillRequestIdleCallback } = require("./utils/polyfill");
 
@@ -22,6 +23,10 @@ let delection = [];
 
 // 处理Fiber节点
 function performUnitOfWork(): IFiber | null {
+  /** 生成dom元素 */
+  if (!nextUnitOfWOrk?.dom) {
+    nextUnitOfWOrk.dom = createDom(nextUnitOfWOrk.props.children);
+  }
   return;
 }
 
@@ -46,7 +51,7 @@ const scheduler = (deadline: IDeadline) => {
   window.requestIdleCallback(scheduler);
 };
 
-export function render(elements: IElement, container: HTMLElement) {
+export function render(elements: IElement, container: DOMType) {
   /* 创建初始Fiber节点,elements作为其子节点 */
   workInProgressRoot = nextUnitOfWOrk = {
     dom: container,
