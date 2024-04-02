@@ -1,17 +1,13 @@
-import { IDeadline } from "../lib/polyfill"
+import { createElement } from "../lib/React";
 
-const { polyfillRequestIdleCallback } = require("./utils/polyfill")
+const element = createElement("div", { style: "color:gray;" }, [
+  createElement("h2", {}, ["hello"]),
+  createElement("h2", {}, ["world"]),
+  createElement("div", {}, [
+    createElement("a", { href: "https://www.baidu.com" }, [
+      "百度一下,你就知道!",
+    ]),
+  ]),
+]);
 
-// polyfill
-polyfillRequestIdleCallback()
-
-// 调度
-const scheduler = (deadline: IDeadline) => {
-    if(!deadline.didTimeout && deadline.timeRemaining() > 0) {
-        console.log(deadline.timeRemaining())
-        // console.log('hello!')
-    }
-    console.log('frame end')
-    window.requestIdleCallback(scheduler)
-}
-window.requestIdleCallback(scheduler)
+console.log(element)
