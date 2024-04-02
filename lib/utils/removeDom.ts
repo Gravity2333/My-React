@@ -2,7 +2,7 @@ import { DOMType, IFiber } from "../typings";
 
 export function removeDom(dom: DOMType) {
   if (dom) {
-    dom.parentNode.removeChild(dom);
+    dom.parentNode?.removeChild(dom);
   }
 }
 
