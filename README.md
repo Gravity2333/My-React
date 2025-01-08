@@ -1,4 +1,4 @@
-## 自己写一个REACT!
+## 自己写一个REACT! learn
 ## 使用方式
 npm install
 npm run dev
