@@ -4,9 +4,16 @@
  *  文字，TEXT_ELEMENT_TYPE
  */
 
+import { REACT_ELEMENT_TYPE } from "./ReactSymbols";
+
 const TEXT_ELEMENT_TYPE =
   "TEXT_ELEMENT"; /** 传入的Element类型 支持字符串/函数 */
-export type ReactElementType = string | Function | typeof TEXT_ELEMENT_TYPE;
+export type ReactElementType =
+  | string
+  | Function
+  | typeof TEXT_ELEMENT_TYPE
+  | Symbol
+  | number;
 /** 属性类型 */
 export type ReactElementProps = Record<string, any>;
 /** key */
@@ -16,7 +23,8 @@ type Children = ReactElement | string;
 
 /** Element元素类型 */
 export interface ReactElement {
-  $$typeof: Symbol;
+  $$typeof: Symbol | number;
+  key: Key;
   type: ReactElementType;
   props: ReactElementProps;
 }
@@ -28,8 +36,9 @@ export function createElement(
   ...children: Children[]
 ): ReactElement {
   return {
-    $$typeof: Symbol.for("myReact.element"),
+    $$typeof: REACT_ELEMENT_TYPE,
     type,
+    key: props.key ? String(props.key) : undefined,
     props: {
       ...props,
       children: children.map((child) => {

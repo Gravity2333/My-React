@@ -1,7 +1,13 @@
 import { Flags, NoFlags } from "./flags";
-import { Key, ReactElementProps, ReactElementType } from "./React";
+import {
+  Key,
+  ReactElement,
+  ReactElementProps,
+  ReactElementType,
+} from "./React";
+import { REACT_FRAGMENT_TYPE } from "./ReactSymbols";
 import { UpdateQueue } from "./updateQueue";
-import { WorkTag } from "./workTag";
+import { Fragment, FunctionComponent, HostComponent, WorkTag } from "./workTag";
 
 export type Container = Element;
 export type Instance = Element;
@@ -59,7 +65,7 @@ export class FiberNode {
     this.flags = NoFlags;
     this.subTreeFlags = NoFlags;
     this.pendingProps = pendingProps;
-    this.delections = [];
+    this.delections = null;
 
     this.updateQueue = null;
     this.alternate = null;
@@ -113,7 +119,7 @@ export function createWorkInProgress(
     currentFiber.flags = NoFlags;
     currentFiber.subTreeFlags = NoFlags;
     currentFiber.pendingProps = pendingProps;
-    currentFiber.delections = [];
+    currentFiber.delections = null;
   }
 
   // 剩下的可以复用
@@ -128,4 +134,35 @@ export function createWorkInProgress(
   // stateNode也不需要复用 因为alternate和currentFiber之间 如果有关联，那么type一定是相等的
   wip.child = null;
   return wip;
+}
+
+/**
+ * 从ReactElement对象 创建Fiber对象
+ * @param element
+ */
+export function creareFiberFromElement(element: ReactElement): FiberNode {
+  // 默认fiberTag = FunctionComponent
+  let fiberTag: WorkTag = FunctionComponent;
+  let pendingProps: ReactElementProps = element.props;
+
+  // hostComponent的element.type为string
+  if (typeof element.type === "string") {
+    fiberTag = HostComponent;
+  } else if (typeof element.type === "object") {
+    // TODO
+  } else if (element.type === REACT_FRAGMENT_TYPE) {
+    fiberTag = Fragment;
+    return createFiberFromFragment(element);
+  }
+
+  return new FiberNode(fiberTag, pendingProps, element.key);
+}
+
+export function createFiberFromFragment(element: ReactElement) {
+  const fragmentFiber = new FiberNode(
+    Fragment,
+    element.props.children,
+    element.key
+  );
+  return fragmentFiber;
 }
