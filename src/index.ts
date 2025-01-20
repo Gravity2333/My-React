@@ -1,6 +1,41 @@
+
 import { createElement } from "../lib/React";
-import { render } from "../lib/ReactDom";
-import App from "./App";
 
-render(createElement(App, {}, []), document.querySelector("#root-master"));
-
+// render();
+console.log(createElement(
+    "div",
+    {
+      style:
+        "border:1px solid black;width:40%;text-align:center;background-color:lightGray;",
+    },
+    createElement(
+      "div",
+      {
+        style: "padding:20px;border-bottom:1px solid black",
+      },
+      createElement("h1", {}, "TOY-REACT DEMO"),
+      // createElement("h2", {}, ["计数器:", value]),
+      createElement(
+        "button",
+        // { style: "background-color:red", onClick: handleAdd.bind(null, 1) },
+        ["+1"]
+      )
+      // createElement("button", { onClick: handleAdd.bind(null, 5) }, ["+5"]),
+      // createElement("button", { onClick: handleAdd.bind(null, 8) }, ["+8"]),
+      // createElement("button", { onClick: handleMinus.bind(null, 1) }, ["-1"]),
+      // createElement("button", { onClick: handleMinus.bind(null, 5) }, ["-5"]),
+      // createElement("button", { onClick: handleMinus.bind(null, 8) }, ["-8"]),
+    ),
+    createElement(
+      "div",
+      {},
+      createElement("h2", {}, "输入框")
+      // createElement("input", { value: user, onInput: handeleInput }, []),
+      // createElement("h2", {}, ["输入框值:", user]),
+    ),
+    createElement(
+      "div",
+      {},
+      createElement("img", { src: "/logo192.png" }, "输入框")
+    )
+  ))
