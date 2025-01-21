@@ -1,6 +1,8 @@
 import { beginWork } from "./beginwork";
+import { commitMutationEffects } from "./commitWork";
 import { completeWork } from "./completeWork";
 import { createWorkInProgress, FiberNode, FiberRootNode } from "./fiber";
+import { MutationMask, NoFlags, PassiveMask } from "./flags";
 import { Lane, NoLane } from "./lane";
 import scheduler from "./scheduler";
 import { flushSyncCallbacks, scheduleSyncCallback } from "./syncTaskQueue";
@@ -167,5 +169,23 @@ export function renderRoot(
 
 /** commit阶段 */
 export function commitRoot(root: FiberRootNode) {
-  
+  const finishedWork = root.finishedWork;
+  if (finishedWork === null) return;
+  root.finishedWork = null;
+
+  /** hostRootFiber是否有effect  */
+  const hostRootFiberHasEffect =
+    (finishedWork.flags & (MutationMask | PassiveMask)) !== NoFlags;
+
+  /** hostRootFiber的子树是否有effect  */
+  const subtreeHasEffect =
+    (finishedWork.subTreeFlags & (MutationMask | PassiveMask)) !== NoFlags;
+
+  /** 有Effect才处理 */
+  if (hostRootFiberHasEffect || subtreeHasEffect) {
+    commitMutationEffects(finishedWork, root);
+  }
+  // commit完成 修改current指向新的树
+  root.current = finishedWork;
+  ensureRootIsScheduled(root);
 }
