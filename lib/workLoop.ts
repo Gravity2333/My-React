@@ -1,4 +1,5 @@
 import { beginWork } from "./beginwork";
+import { completeWork } from "./completeWork";
 import { createWorkInProgress, FiberNode, FiberRootNode } from "./fiber";
 import { Lane, NoLane } from "./lane";
 import scheduler, { PriorityLevel } from "./scheduler";
@@ -56,7 +57,11 @@ export function performSyncWorkOnRoot(root: FiberRootNode) {
 }
 
 /** 从root开始 处理并发任务 */
-export function performConcurrentWOrkOnRoot() {}
+export function performConcurrentWOrkOnRoot(root: FiberRootNode) {
+  // 开始生成fiber 关闭并发模式
+  renderRoot(root, NoLane, true);
+  commitRoot();
+}
 
 /**
  * prepareFreshStack 这个函数的命名可能会让人觉得它与“刷新（refresh）”相关，
@@ -74,6 +79,23 @@ function prepareRefreshStack(root: FiberRootNode, lane: Lane) {
   workInProgress = createWorkInProgress(root.current, {});
 }
 
+function completeUnitOfWork(fiber: FiberNode) {
+  // 归
+  while (fiber !== null) {
+    completeWork(fiber);
+
+    if (fiber.sibling !== null) {
+      // 有子节点 修改wip 退出继续递的过程
+      workInProgress = fiber.sibling;
+      return;
+    }
+
+    /** 向上归 修改workInProgress */
+    fiber = fiber.return;
+    workInProgress = fiber;
+  }
+}
+
 /**
  * 处理单个fiber单元 包含 递，归 2个过程
  * @param fiber
@@ -81,11 +103,13 @@ function prepareRefreshStack(root: FiberRootNode, lane: Lane) {
 function performUnitOfWork(fiber: FiberNode) {
   // beginWork 递的过程
   const next = beginWork(fiber);
-
-  // 这里不能之间给workInProgress赋值，如果提前赋workInProgress为null 会导致递归提前结束
+  // 递的过程结束，保存pendingProps
+  fiber.memorizedProps = fiber.pendingProps;
+  // 这里不能直接给workInProgress赋值，如果提前赋workInProgress为null 会导致递归提前结束
   // 如果next为 null 则表示已经递到叶子节点，需要开启归到过程
   if (next === null) {
-    // completeWork(next)
+    /** 开始归的过程 */
+    completeUnitOfWork(fiber);
   } else {
     // 继续递
     workInProgress = next;
@@ -97,6 +121,12 @@ function performUnitOfWork(fiber: FiberNode) {
 /** 递归循环 */
 function workLoop() {
   while (workInProgress) {
+    performUnitOfWork(workInProgress);
+  }
+}
+
+function workConcurrentLoop() {
+  while (workInProgress && !scheduler.shouldYieldToHost()) {
     performUnitOfWork(workInProgress);
   }
 }
@@ -118,12 +148,8 @@ export function renderRoot(
 
   while (true) {
     try {
-      if (shouldTimeSlice) {
-        // 开启时间片 scheduler调度
-        scheduler.scheduleCallback(PriorityLevel.IMMEDIATE_PRIORITY, workLoop);
-      } else {
-        workLoop();
-      }
+      // 开启时间片 scheduler调度
+      shouldTimeSlice ? workConcurrentLoop() : workLoop();
     } catch (e) {
       /** 使用try catch保证workLoop顺利执行 多次尝试 */
       workLoopRetryTimes++;

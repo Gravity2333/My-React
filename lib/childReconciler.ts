@@ -339,12 +339,12 @@ function useFiber(currentFiber: FiberNode, pendingProps: ReactElementProps) {
 export function reconcileChildFiber(
   wip: FiberNode,
   currentChild: FiberNode,
-  children: ReactElement
+  children: ReactElementChildren
 ) {
   return childReconciler(true)(wip, currentChild, children);
 }
 
 /** 挂载子元素 */
-export function mountChildFiber(wip: FiberNode, children: ReactElement) {
+export function mountChildFiber(wip: FiberNode, children: ReactElementChildren) {
   return childReconciler(false)(wip, null, children);
 }

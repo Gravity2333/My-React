@@ -1,6 +1,6 @@
 import { mountChildFiber, reconcileChildFiber } from "./childReconciler";
 import { FiberNode } from "./fiber";
-import { ReactElement } from "./React";
+import { ReactElementChildren } from "./React";
 import {
   Fragment,
   FunctionComponent,
@@ -35,7 +35,7 @@ export function beginWork(wip: FiberNode): FiberNode | null {
  * @param wip
  * @param children
  */
-function reconcileChildren(wip: FiberNode, children: ReactElement) {
+function reconcileChildren(wip: FiberNode, children: ReactElementChildren) {
   /** 这里需要注明一下：
    * 当wip.alternate === null 的时候 也就是挂载阶段，此时children不需要添加副作用 即flags subtreeFlags delection 这些，因为当前dom中
    * 并不存在先前的节点，在completeWork阶段 会创建这些节点 并且完成福子节点之间的链接
@@ -75,10 +75,27 @@ function updateHostRoot(wip: FiberNode): FiberNode {
 
 /** 处理普通节点的比较 */
 function updateHostComponent(wip: FiberNode): FiberNode {
-  return;
+  /** 1.获取element.children */
+  const hostChildren = wip.pendingProps?.children;
+  /** 2. 协调子元素 */
+  reconcileChildren(wip, hostChildren);
+  /** 3.返回第一个child */
+  return wip.child;
 }
 
 /** 处理函数节点的比较 */
 function updateFunctionComponent(wip: FiberNode): FiberNode {
-  return;
+  const Component = wip.type as Function;
+  const pendingProps = wip.pendingProps;
+  const nextChildElement = Component(pendingProps);
+  reconcileChildren(wip, nextChildElement);
+  return wip.child;
+}
+
+/** 处理Fragment */
+function updateFragment(wip: FiberNode): FiberNode {
+  /** fragment的pendingProps就是children */
+  const nextChildElement = wip.pendingProps as ReactElementChildren;
+  reconcileChildren(wip, nextChildElement);
+  return wip.child;
 }
