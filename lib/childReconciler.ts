@@ -1,10 +1,16 @@
 import {
   creareFiberFromElement,
+  createFiberFromFragment,
   createWorkInProgress,
   FiberNode,
 } from "./fiber";
-import { ChildDeletion } from "./flags";
-import { ReactElement, ReactElementProps } from "./React";
+import { ChildDeletion, Placement } from "./flags";
+import {
+  Key,
+  ReactElement,
+  ReactElementChildren,
+  ReactElementProps,
+} from "./React";
 import { REACT_ELEMENT_TYPE, REACT_FRAGMENT_TYPE } from "./ReactSymbols";
 import { Fragment, HostText } from "./workTag";
 
@@ -51,9 +57,87 @@ function childReconciler(shouldTrackEffect: boolean) {
   function reconcileArray(
     wip: FiberNode,
     currentChild: FiberNode,
-    newChild: ReactElement[]
+    newChild: ReactElementChildren[]
   ): FiberNode {
-    return 
+    /** 设置几个指针 */
+    let lastPlacedIndex = 0; // 最后一个可复用DOM的index
+    let firstNewFiber: FiberNode | null; // 第一个新的Fiber
+    let lastNewFiber: FiberNode | null; // 最后一个新的Fiber
+    /** 把当前currentChild存储到一个Map中 */
+    const existingChildren = new Map<Key, FiberNode>();
+    let currentExistingChild = currentChild;
+    while (currentExistingChild !== null) {
+      /** fiber一定有key，直接获取 没有用index */
+      const currentExistingChildKey =
+        currentExistingChild.key !== null
+          ? currentExistingChild.key
+          : currentExistingChild.index;
+      /** 入Map */
+      existingChildren.set(
+        String(currentExistingChildKey),
+        currentExistingChild
+      );
+      currentExistingChild = currentExistingChild.sibling;
+    }
+
+    /** 遍历newChild 创建Fiber */
+    for (let i = 0; i < newChild.length; i++) {
+      /** 根据child获取新的fiber 可以复用 可以创建 */
+      const newChildFiber = generateNewFiberFromMap(
+        existingChildren,
+        i,
+        newChild[i]
+      );
+
+      if (null === newChildFiber) {
+        continue;
+      }
+
+      // 设置父return
+      newChildFiber.return = wip;
+      // 根据顺序设置新的index
+      newChildFiber.index = i;
+
+      // 连接新的fiber节点
+      if (lastNewFiber === null && firstNewFiber === null) {
+        /** 初次进入 两个指针都指向第一个fiber */
+        firstNewFiber = lastNewFiber = newChildFiber;
+      } else {
+        /** 移动lastNewFiber指针 */
+        lastNewFiber.sibling = newChildFiber;
+        lastNewFiber = newChildFiber;
+      }
+
+      /** 设置副作用 */
+      if (!shouldTrackEffect) return;
+
+      /** 具体思路是 设置一个lastPlacedIndex = 0 每次检查newFiber的oldIndex 如果比这个高 则不动 修改lastPlacedIndex = oldIndex
+       *  如果比lastPlacedIndex小 则设置Placement 也就是要移动
+       *
+       * 如果没有alternate 则直接设置为Placment
+       */
+
+      const alternate = newChildFiber.alternate;
+      if (alternate) {
+        const oldIndex = alternate.index;
+        if (oldIndex < lastPlacedIndex) {
+          newChildFiber.flags |= Placement;
+          lastPlacedIndex = oldIndex;
+        } else {
+          // 不设置副作用 移动lastNewFiber
+          lastPlacedIndex = oldIndex;
+        }
+      } else {
+        newChildFiber.flags |= Placement;
+      }
+    }
+
+    /** 处理完所有的element节点，此时existingChildren剩下的为删除节点 设置副作用删除 */
+    existingChildren.forEach((needDeletedFiber) =>
+      deleteChild(wip, needDeletedFiber)
+    );
+    /** 返回第一个新的Fiber */
+    return firstNewFiber;
   }
 
   /** 处理单个子节点的情况 */
@@ -95,6 +179,10 @@ function childReconciler(shouldTrackEffect: boolean) {
     // 都没摘到key和type都相同的 创建
     const newFiber = creareFiberFromElement(newChild);
     newFiber.return = wip;
+    if (shouldTrackEffect) {
+      /** 设置副作用 */
+      newFiber.flags != Placement;
+    }
     return newFiber;
   }
 
@@ -126,6 +214,10 @@ function childReconciler(shouldTrackEffect: boolean) {
     /** 都没找到文本节点，直接创建 */
     const textNodeFiber = new FiberNode(HostText, { content }, null);
     textNodeFiber.return = wip;
+    if (shouldTrackEffect) {
+      /** 设置副作用 */
+      textNodeFiber.flags != Placement;
+    }
     return textNodeFiber;
   }
 
@@ -158,6 +250,81 @@ function childReconciler(shouldTrackEffect: boolean) {
 
     return null;
   };
+}
+
+/**
+ * 原版叫updateFromMap 感觉这个名称不好理解
+ * 根据existingChildren Map 生成element的新的Fiber
+ * @param returnFiber
+ * @param existingChildren
+ * @param index
+ * @param element
+ */
+function generateNewFiberFromMap(
+  existingChildren: Map<Key, FiberNode>,
+  index: number,
+  element: ReactElementChildren
+) {
+  /** 获取elementKey
+   * element 有三种可能
+   * 1. React.Element
+   * 2. Array<newChild>
+   * 3. Text
+   */
+  const elementKey: Key = String(
+    Array.isArray(element) ||
+      typeof element === "string" ||
+      typeof element === "number"
+      ? index
+      : element.key
+  );
+
+  /** 查找Map 看有没有已经存在可以复用的Fiber */
+  const beforeFiber = existingChildren.get(elementKey);
+
+  /** 按照类型处理 */
+  if (Array.isArray(element)) {
+    /** 对于数组类型的element 做法是包一层Fragment
+     * 检查 如果beforeFiber是Fragment则复用
+     *      不是则创建新的Fragment
+     */
+    if (beforeFiber && beforeFiber.tag === Fragment) {
+      // 复用了 删除existingChildren中的元素
+      existingChildren.delete(elementKey);
+      return useFiber(beforeFiber, element);
+    } else {
+      // 没有before 或者类型不是Fragment 创建Fiber
+      return createFiberFromFragment(element, elementKey);
+    }
+  }
+
+  /** 如果是文字类型 */
+  if (typeof element === "string" || typeof element === "number") {
+    if (beforeFiber && beforeFiber.tag === HostText) {
+      existingChildren.delete(elementKey);
+      return useFiber(beforeFiber, {
+        content: String(element),
+      });
+    } else {
+      return new FiberNode(HostText, { content: String(element) }, elementKey);
+    }
+  }
+
+  /** 如果是普通类型 */
+  if (
+    typeof element === "object" &&
+    element !== null &&
+    element.$$typeof === REACT_ELEMENT_TYPE
+  ) {
+    if (beforeFiber) {
+      existingChildren.delete(elementKey);
+      return useFiber(beforeFiber, element.props);
+    } else {
+      return creareFiberFromElement(element);
+    }
+  }
+
+  return null;
 }
 
 /** 复用节点，如果存在alternate则复用 不存在则创建 调用createWorkInProgress */

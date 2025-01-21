@@ -2,6 +2,7 @@ import { Flags, NoFlags } from "./flags";
 import {
   Key,
   ReactElement,
+  ReactElementChildren,
   ReactElementProps,
   ReactElementType,
 } from "./React";
@@ -48,7 +49,8 @@ export class FiberNode {
   alternate: FiberNode | null;
 
   constructor(tag: WorkTag, pendingProps: ReactElementProps, key: Key) {
-    this.key = key;
+    // 没传key的情况下 都是null 在Diff reconcileArray的时候 会使用index
+    this.key = key || null;
     this.tag = tag;
     this.type = null;
 
@@ -152,17 +154,16 @@ export function creareFiberFromElement(element: ReactElement): FiberNode {
     // TODO
   } else if (element.type === REACT_FRAGMENT_TYPE) {
     fiberTag = Fragment;
-    return createFiberFromFragment(element);
+    return createFiberFromFragment(element.props.children, element.key);
   }
 
   return new FiberNode(fiberTag, pendingProps, element.key);
 }
 
-export function createFiberFromFragment(element: ReactElement) {
-  const fragmentFiber = new FiberNode(
-    Fragment,
-    element.props.children,
-    element.key
-  );
+export function createFiberFromFragment(
+  elemenst: ReactElementChildren[],
+  key: Key
+) {
+  const fragmentFiber = new FiberNode(Fragment, elemenst, key);
   return fragmentFiber;
 }
