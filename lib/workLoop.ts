@@ -2,7 +2,7 @@ import { beginWork } from "./beginwork";
 import { completeWork } from "./completeWork";
 import { createWorkInProgress, FiberNode, FiberRootNode } from "./fiber";
 import { Lane, NoLane } from "./lane";
-import scheduler, { PriorityLevel } from "./scheduler";
+import scheduler from "./scheduler";
 import { flushSyncCallbacks, scheduleSyncCallback } from "./syncTaskQueue";
 import { HostRoot } from "./workTag";
 
@@ -53,14 +53,18 @@ export function ensureRootIsScheduled(root: FiberRootNode) {
 export function performSyncWorkOnRoot(root: FiberRootNode) {
   // 开始生成fiber 关闭并发模式
   renderRoot(root, NoLane, false);
-  commitRoot();
+  // 设置root.finishedWork
+  root.finishedWork = root.current.alternate;
+  commitRoot(root);
 }
 
 /** 从root开始 处理并发任务 */
 export function performConcurrentWOrkOnRoot(root: FiberRootNode) {
   // 开始生成fiber 关闭并发模式
   renderRoot(root, NoLane, true);
-  commitRoot();
+  // 设置root.finishedWork
+  root.finishedWork = root.current.alternate;
+  commitRoot(root);
 }
 
 /**
@@ -161,4 +165,7 @@ export function renderRoot(
   }
 }
 
-export function commitRoot() {}
+/** commit阶段 */
+export function commitRoot(root: FiberRootNode) {
+  
+}
