@@ -1,6 +1,6 @@
 import { FiberNode } from "./fiber";
 import { NoFlags, Update } from "./flags";
-import { updateFiberProps } from "./SyntheticEvent";
+import { updateFiberProps } from "./events/SyntheticEvent";
 import {
   Fragment,
   FunctionComponent,
