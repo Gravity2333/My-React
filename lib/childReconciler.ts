@@ -61,8 +61,8 @@ function childReconciler(shouldTrackEffect: boolean) {
   ): FiberNode {
     /** 设置几个指针 */
     let lastPlacedIndex = 0; // 最后一个可复用DOM的index
-    let firstNewFiber: FiberNode | null; // 第一个新的Fiber
-    let lastNewFiber: FiberNode | null; // 最后一个新的Fiber
+    let firstNewFiber: FiberNode | null = null; // 第一个新的Fiber
+    let lastNewFiber: FiberNode | null = null; // 最后一个新的Fiber
     /** 把当前currentChild存储到一个Map中 */
     const existingChildren = new Map<Key, FiberNode>();
     let currentExistingChild = currentChild;
@@ -109,26 +109,26 @@ function childReconciler(shouldTrackEffect: boolean) {
       }
 
       /** 设置副作用 */
-      if (!shouldTrackEffect) return;
+      if (shouldTrackEffect) {
+        /** 具体思路是 设置一个lastPlacedIndex = 0 每次检查newFiber的oldIndex 如果比这个高 则不动 修改lastPlacedIndex = oldIndex
+         *  如果比lastPlacedIndex小 则设置Placement 也就是要移动
+         *
+         * 如果没有alternate 则直接设置为Placment
+         */
 
-      /** 具体思路是 设置一个lastPlacedIndex = 0 每次检查newFiber的oldIndex 如果比这个高 则不动 修改lastPlacedIndex = oldIndex
-       *  如果比lastPlacedIndex小 则设置Placement 也就是要移动
-       *
-       * 如果没有alternate 则直接设置为Placment
-       */
-
-      const alternate = newChildFiber.alternate;
-      if (alternate) {
-        const oldIndex = alternate.index;
-        if (oldIndex < lastPlacedIndex) {
-          newChildFiber.flags |= Placement;
-          lastPlacedIndex = oldIndex;
+        const alternate = newChildFiber.alternate;
+        if (alternate) {
+          const oldIndex = alternate.index;
+          if (oldIndex < lastPlacedIndex) {
+            newChildFiber.flags |= Placement;
+            lastPlacedIndex = oldIndex;
+          } else {
+            // 不设置副作用 移动lastNewFiber
+            lastPlacedIndex = oldIndex;
+          }
         } else {
-          // 不设置副作用 移动lastNewFiber
-          lastPlacedIndex = oldIndex;
+          newChildFiber.flags |= Placement;
         }
-      } else {
-        newChildFiber.flags |= Placement;
       }
     }
 
@@ -136,6 +136,7 @@ function childReconciler(shouldTrackEffect: boolean) {
     existingChildren.forEach((needDeletedFiber) =>
       deleteChild(wip, needDeletedFiber)
     );
+
     /** 返回第一个新的Fiber */
     return firstNewFiber;
   }
@@ -181,7 +182,7 @@ function childReconciler(shouldTrackEffect: boolean) {
     newFiber.return = wip;
     if (shouldTrackEffect) {
       /** 设置副作用 */
-      newFiber.flags != Placement;
+      newFiber.flags |= Placement;
     }
     return newFiber;
   }
@@ -226,16 +227,14 @@ function childReconciler(shouldTrackEffect: boolean) {
     currentChild: FiberNode,
     newChild: any
   ): FiberNode => {
+
     // 处理Fragment
     if (typeof (newChild as ReactElement) === "object" && newChild !== null) {
       if ((newChild as ReactElement).type === REACT_FRAGMENT_TYPE) {
         // 更新newChild 为Fragment内容
         newChild = newChild?.props?.children;
       }
-    }
 
-    // 如果是普通节点
-    if (typeof newChild === "object" && typeof newChild !== null) {
       // 如果是多节点 Diff
       if (Array.isArray(newChild)) {
         return reconcileArray(wip, currentChild, newChild);
@@ -243,6 +242,7 @@ function childReconciler(shouldTrackEffect: boolean) {
       // 如果是单节点 看是否key type一样 是否可复用
       return reconcileSingle(wip, currentChild, newChild);
     }
+ 
     // 如果是文本节点 (文字或者数字 -> 转换成文本节点)
     if (typeof newChild === "string" || typeof newChild === "number") {
       return reconcileTextNode(wip, currentChild, newChild);
@@ -345,6 +345,9 @@ export function reconcileChildFiber(
 }
 
 /** 挂载子元素 */
-export function mountChildFiber(wip: FiberNode, children: ReactElementChildren) {
+export function mountChildFiber(
+  wip: FiberNode,
+  children: ReactElementChildren
+) {
   return childReconciler(false)(wip, null, children);
 }

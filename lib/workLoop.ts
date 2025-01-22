@@ -16,15 +16,17 @@ let workInProgress: FiberNode = null;
  * @param fiberNode
  */
 export function markUpdateLaneFromFiberToRoot(fiberNode: FiberNode) {
-  let parent = fiberNode.return;
+  let parent = fiberNode.return; // parent表示父节点
+  let node = fiberNode; // node标记当前节点
   while (parent !== null) {
     // 处理parent节点的childLanes
+    node = parent;
     parent = parent.return;
   }
 
   /** 检查当前是否找到了hostRootFiber */
-  if (parent.tag === HostRoot) {
-    return parent.stateNode;
+  if (node.tag === HostRoot) {
+    return node.stateNode;
   }
 
   return null;
@@ -156,6 +158,7 @@ export function renderRoot(
     try {
       // 开启时间片 scheduler调度
       shouldTimeSlice ? workConcurrentLoop() : workLoop();
+      break;
     } catch (e) {
       /** 使用try catch保证workLoop顺利执行 多次尝试 */
       workLoopRetryTimes++;
@@ -187,5 +190,5 @@ export function commitRoot(root: FiberRootNode) {
   }
   // commit完成 修改current指向新的树
   root.current = finishedWork;
-  ensureRootIsScheduled(root);
+  // ensureRootIsScheduled(root);
 }

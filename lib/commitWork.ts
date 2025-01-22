@@ -8,6 +8,7 @@ import {
   Placement,
   Update,
 } from "./flags";
+import { updateFiberProps } from "./SyntheticEvent";
 import { HostComponent, HostRoot, HostText } from "./workTag";
 
 /** commit回调类型 */
@@ -31,7 +32,7 @@ function commitEffect(
         // 递
         nextFinishedWork = nextFinishedWork.child;
       } else {
-        while (nextFinishedWork !== null && nextFinishedWork !== finishedWork) {
+        while (nextFinishedWork !== null) {
           // 归
           callback(nextFinishedWork, root);
           if (nextFinishedWork.sibling !== null) {
@@ -66,6 +67,10 @@ const commitMutationEffectsOnFiber: CommitCallback = (finishedWork, root) => {
   }
 
   if (flags & ChildDeletion) {
+    const deletion = finishedWork.delections;
+    deletion.forEach((deleteOldFiber) => {
+      commitDeletion(deleteOldFiber);
+    });
     finishedWork.flags &= ~ChildDeletion;
   }
 };
@@ -88,13 +93,78 @@ function commitPlacement(finishedWork: FiberNode) {
 }
 
 /** 处理update副作用 */
-function commitUpdate(finishedWork: FiberNode) {}
+function commitUpdate(fiber: FiberNode) {
+  if (fiber.tag === HostText) {
+    fiber.stateNode.textContent = fiber.memorizedProps.content;
+  } else {
+    updateFiberProps(fiber.stateNode, fiber.memorizedProps);
+  }
+}
+
+/** 删除节点 */
+function commitDeletion(fiber: FiberNode) {
+  const parent = getHostParent(fiber);
+
+  if (
+    fiber.stateNode &&
+    (fiber.tag === HostComponent || fiber.tag === HostText)
+  ) {
+    parent.removeChild(fiber.stateNode);
+  } else {
+    // fiber不是host 递归查找
+    let hostChild = fiber.child;
+    while (true) {
+      while (hostChild !== null) {
+        if (hostChild.tag === HostComponent || hostChild.tag === HostText) {
+          parent.removeChild(hostChild.stateNode);
+          break;
+        }
+        if (hostChild.child !== null) {
+          hostChild = hostChild.child;
+        } else {
+          break;
+        }
+      }
+      // 归
+      if (hostChild.sibling === null) {
+        if (hostChild.return === null || hostChild.return === fiber) return;
+        hostChild = hostChild.return;
+      }
+      hostChild.sibling.return = hostChild;
+      hostChild = hostChild.sibling;
+    }
+  }
+
+  // 断开链接
+  const current = fiber.alternate;
+  if (current) {
+    current.alternate = null;
+  }
+  fiber.alternate = null;
+  fiber.child = null;
+  if (fiber.return !== null) {
+    if (fiber.return.child === fiber) {
+      // 第一个元素
+      fiber.return.child = fiber.sibling;
+    } else {
+      let firstChild = fiber.return.child;
+      while (firstChild.sibling && fiber.sibling !== fiber) {
+        firstChild = firstChild.sibling;
+      }
+      if (firstChild.sibling && firstChild.sibling === fiber) {
+        firstChild.sibling = fiber.sibling;
+      }
+    }
+  }
+  fiber.return = null;
+  fiber.sibling = null;
+}
 
 /** 获取HostParent
  *  获取当前节点的HostComponent/HostRoot parent
  */
-function getHostParent(fiber: FiberNode) {
-  let node = fiber;
+function getHostParent(fiber: FiberNode): Element {
+  let node = fiber.return;
   while (node !== null) {
     if (node.tag === HostComponent) {
       // host component 返回其stateNode
@@ -122,7 +192,7 @@ function getHostParent(fiber: FiberNode) {
  *    如果回溯到过程中遇到host 那么一定是parent节点 或者已经找到hostRoot了 表示没找到
  * @param fiber
  */
-function getHostSibling(fiber: FiberNode) {
+function getHostSibling(fiber: FiberNode): Element {
   let node = fiber;
   // 找sibling节点,没有找parent，如果遇到hostComponent / hostRoot 直接返回null
   findSibling: while (true) {

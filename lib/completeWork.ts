@@ -112,11 +112,11 @@ function appendAllChildren(instance: Element, wip: FiberNode) {
 function bubbleProperties(wip: FiberNode) {
   let subtreeFlags = NoFlags;
   // TODO childLanes
-
   let node = wip.child;
   while (node !== null) {
     // merge subtreeFlags
     subtreeFlags |= node.subTreeFlags;
+    subtreeFlags |= node.flags;
 
     node.return = wip; // 冗余操作
     node = node.sibling; // 找下一个node

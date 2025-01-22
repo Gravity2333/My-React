@@ -1,6 +1,7 @@
 import { Container, FiberNode, FiberRootNode } from "./fiber";
 import { ReactElement } from "./React";
 import { Update, UpdateQueue } from "./updateQueue";
+import { scheduleUpdateOnFiber } from "./workLoop";
 import { HostRoot } from "./workTag";
 
 /** 创建应用根节点FiberRootNode 以及第一个HostRoot节点 hostRootFiber */
@@ -23,7 +24,7 @@ const updateContainer = (element: ReactElement, root: FiberRootNode) => {
   // 更新的Element元素入队
   root.current.updateQueue?.enqueue(new Update<ReactElement>(element));
   // scheduleUpdateOnFiber 调度更新
-  //   scheduleUpdateOnFiber(root.current);
+  scheduleUpdateOnFiber(root.current);
 };
 
 /** 创建根节点的入口 */

@@ -157,7 +157,9 @@ export function creareFiberFromElement(element: ReactElement): FiberNode {
     return createFiberFromFragment(element.props.children, element.key);
   }
 
-  return new FiberNode(fiberTag, pendingProps, element.key);
+  const fiber =  new FiberNode(fiberTag, pendingProps, element.key);
+	fiber.type = element.type;
+  return fiber
 }
 
 export function createFiberFromFragment(
