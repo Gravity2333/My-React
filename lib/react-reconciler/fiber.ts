@@ -5,7 +5,7 @@ import {
   ReactElementChildren,
   ReactElementProps,
   ReactElementType,
-} from "./React";
+} from "../react";
 import { REACT_FRAGMENT_TYPE } from "./ReactSymbols";
 import { UpdateQueue } from "./updateQueue";
 import { Fragment, FunctionComponent, HostComponent, WorkTag } from "./workTag";

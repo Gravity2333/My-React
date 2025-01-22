@@ -1,6 +1,6 @@
 import { mountChildFiber, reconcileChildFiber } from "./childReconciler";
 import { FiberNode } from "./fiber";
-import { ReactElementChildren } from "./React";
+import { ReactElementChildren } from "../react";
 import {
   Fragment,
   FunctionComponent,

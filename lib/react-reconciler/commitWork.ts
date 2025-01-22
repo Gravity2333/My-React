@@ -8,7 +8,7 @@ import {
   Placement,
   Update,
 } from "./flags";
-import { updateFiberProps } from "./events/SyntheticEvent";
+import { updateFiberProps } from "../events/SyntheticEvent";
 import { HostComponent, HostRoot, HostText } from "./workTag";
 
 /** commit回调类型 */

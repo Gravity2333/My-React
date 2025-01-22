@@ -1,5 +1,5 @@
-import { Container } from "../fiber";
-import { ReactElementProps } from "../React";
+import { Container } from "../react-reconciler/fiber";
+import { ReactElementProps } from "../react";
 import { nativeEvents, reactEvents, reactEventSet } from "./events";
 
 /** 转换Style */

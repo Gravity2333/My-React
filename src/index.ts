@@ -1,5 +1,5 @@
-import { createElement } from "../lib/React";
-import { createRoot } from "../lib/ReactDom";
+import { createElement } from "../lib/react";
+import { createRoot } from "../lib/react-dom";
 
 function App() {
   return createElement("h1", {

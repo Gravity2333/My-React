@@ -4,7 +4,7 @@ import { completeWork } from "./completeWork";
 import { createWorkInProgress, FiberNode, FiberRootNode } from "./fiber";
 import { MutationMask, NoFlags, PassiveMask } from "./flags";
 import { Lane, NoLane } from "./lane";
-import scheduler from "./scheduler";
+import scheduler from "../scheduler";
 import { flushSyncCallbacks, scheduleSyncCallback } from "./syncTaskQueue";
 import { HostRoot } from "./workTag";
 

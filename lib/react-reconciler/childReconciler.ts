@@ -10,7 +10,7 @@ import {
   ReactElement,
   ReactElementChildren,
   ReactElementProps,
-} from "./React";
+} from "../react";
 import { REACT_ELEMENT_TYPE, REACT_FRAGMENT_TYPE } from "./ReactSymbols";
 import { Fragment, HostText } from "./workTag";
 

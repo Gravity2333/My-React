@@ -4,7 +4,7 @@
  *  文字，TEXT_ELEMENT_TYPE
  */
 
-import { REACT_ELEMENT_TYPE } from "./ReactSymbols";
+import { REACT_ELEMENT_TYPE } from "../react-reconciler/ReactSymbols";
 
 export type ReactElementType =
   | string

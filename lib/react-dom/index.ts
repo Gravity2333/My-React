@@ -1,9 +1,9 @@
-import { initEvent } from "./events/SyntheticEvent";
-import { Container, FiberNode, FiberRootNode } from "./fiber";
-import { ReactElement } from "./React";
-import { Update, UpdateQueue } from "./updateQueue";
-import { scheduleUpdateOnFiber } from "./workLoop";
-import { HostRoot } from "./workTag";
+import { initEvent } from "../events/SyntheticEvent";
+import { Container, FiberNode, FiberRootNode } from "../react-reconciler/fiber";
+import { ReactElement } from "../react";
+import { Update, UpdateQueue } from "../react-reconciler/updateQueue";
+import { scheduleUpdateOnFiber } from "../react-reconciler/workLoop";
+import { HostRoot } from "../react-reconciler/workTag";
 
 /** 创建应用根节点FiberRootNode 以及第一个HostRoot节点 hostRootFiber */
 const createContainer = (container: Container) => {
