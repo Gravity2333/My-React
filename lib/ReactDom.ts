@@ -1,3 +1,4 @@
+import { initEvent } from "./events/SyntheticEvent";
 import { Container, FiberNode, FiberRootNode } from "./fiber";
 import { ReactElement } from "./React";
 import { Update, UpdateQueue } from "./updateQueue";
@@ -29,7 +30,10 @@ const updateContainer = (element: ReactElement, root: FiberRootNode) => {
 
 /** 创建根节点的入口 */
 export function createRoot(container: Container) {
+  // 创建FiberRootNode
   const root = createContainer(container);
+  // 初始化合成事件
+  initEvent(container);
   return {
     render(element: ReactElement) {
       // TODO

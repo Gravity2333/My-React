@@ -2,7 +2,9 @@ import { createElement } from "../lib/React";
 import { createRoot } from "../lib/ReactDom";
 
 function App() {
-  return createElement("h1", {}, "TOY-REACT DEMO APP");
+  return createElement("h1", {
+    style: {color:'purple'}
+  }, "TOY-REACT DEMO APP");
 }
 
 const elements = createElement(
@@ -12,11 +14,23 @@ const elements = createElement(
       color: "green",
       backgroundColor: "lightgray",
     },
+    onClick: (e) => {
+      console.log(e, "div");
+    },
+    onClickCapture: (e) => {
+      console.log(e, "div captire");
+    },
   },
   createElement("h1", {}, "Hi My React! "),
   createElement(
     "button",
-    { key: "hebtn1", style: { backgroundColor: "red", cursor: "pointer" } },
+    {
+      key: "hebtn1",
+      style: { backgroundColor: "orange", cursor: "pointer" },
+      onClick: (e) => {
+        console.log(e, "btn+1");
+      },
+    },
     "+1"
   ),
   createElement(
@@ -27,6 +41,9 @@ const elements = createElement(
         color: "blue",
         fontSize: "18px",
         cursor: "pointer",
+      },
+      onClick: (e) => {
+        console.log(e, "btn+2");
       },
     },
     "+2"

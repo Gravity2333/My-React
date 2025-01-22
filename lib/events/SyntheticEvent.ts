@@ -1,4 +1,6 @@
+import { Container } from "../fiber";
 import { ReactElementProps } from "../React";
+import { nativeEvents, reactEvents, reactEventSet } from "./events";
 
 /** 转换Style */
 function camelToKebab(str) {
@@ -6,15 +8,16 @@ function camelToKebab(str) {
 }
 
 /** 合成事件 */
-export const elementPropsKey = "__props";
+const elementPropsKey = "__props";
+
+/** 阻止冒泡Key */
+const stopPropagationKey = "__stopPropagation";
 
 /** 判断是否为事件 */
-const isEvent = (key) => key?.startsWith("on");
+const isEvent = (key) => reactEventSet.has(key);
 
 /** 判断是否为属性（排除过滤掉event和children） */
 const isAttribute = (key) => key !== "children" && !isEvent(key);
-
-
 
 /**
  * 在DOM上挂上Fiber代理的属性 方便合成事件这些操作
@@ -87,4 +90,99 @@ export function getFiberProps(node: Element) {
 export function getFiberAttribute(node: Element) {
   const _prop = node[elementPropsKey] || {};
   return covertAttribute(_prop);
+}
+
+type SyntheticEventListener = (e: Event) => void;
+
+type CollectedEvents = {
+  captureCallbacks: SyntheticEventListener[];
+  bubbleCallbacks: SyntheticEventListener[];
+};
+
+/**
+ * 从target到source 收集冒泡/捕获事件
+ * @param source
+ * @param eventType
+ * @param event
+ * @returns
+ */
+function collectEvents(
+  source: Element,
+  eventType: string,
+  event: Event
+): CollectedEvents {
+  /** 收集的事件对象 */
+  const events: CollectedEvents = {
+    captureCallbacks: [],
+    bubbleCallbacks: [],
+  };
+
+  let currentNode = event.target as Element;
+  const reactEvent = reactEvents[eventType];
+  if (!reactEvent) return events;
+  while (currentNode !== source) {
+    // 从target收集到source
+    const nodeProps = getFiberProps(currentNode);
+    if (nodeProps[reactEvent[1]]) {
+       // 冒泡事件
+      events.bubbleCallbacks.push(nodeProps[reactEvent[1]]);
+    }
+    if (nodeProps[reactEvent[0]]) {
+     // 捕获事件
+      events.captureCallbacks.unshift(nodeProps[reactEvent[0]]);
+    }
+    currentNode = currentNode.parentNode as Element;
+  }
+
+  return events;
+}
+
+/* 执行事件 */
+function triggerEventListeners(
+  listeners: SyntheticEventListener[],
+  event: Event
+) {
+  listeners.forEach((listener) => listener(event));
+}
+
+/**
+ * 触发合成事件
+ * @param container 委托的container
+ * @param eventType 原生事件类型
+ * @param event 事件对象
+ */
+function dispatchSyntheticEvent(
+  container: Container,
+  eventType: string,
+  event: Event
+) {
+  const collectedEvents = collectEvents(container, eventType, event);
+
+  // 代理阻止冒泡事件
+  event[stopPropagationKey] = false;
+
+  const originStopPropagation = event.stopPropagation;
+
+  event.stopPropagation = () => {
+    event[stopPropagationKey] = true;
+    originStopPropagation();
+  };
+
+  // 执行捕获事件
+  triggerEventListeners(collectedEvents.captureCallbacks, event);
+  if (!event[stopPropagationKey]) {
+    triggerEventListeners(collectedEvents.bubbleCallbacks, event);
+  }
+}
+
+/** 初始化合成事件 */
+export function initEvent(container: Container) {
+  /** 本质上就是在Container上的事件委托 */
+  nativeEvents.forEach((nativeEvent) => {
+    /** 对每种支持的原生事件 构建委托 */
+    container.addEventListener(
+      nativeEvent,
+      dispatchSyntheticEvent.bind(null, container, nativeEvent)
+    );
+  });
 }
