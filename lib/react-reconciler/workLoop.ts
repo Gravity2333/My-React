@@ -1,12 +1,23 @@
 import { beginWork } from "./beginwork";
-import { commitMutationEffects } from "./commitWork";
+import {
+  commitHookEffectListCreate,
+  commitHookEffectListDestory,
+  commitHookEffectListUnmount,
+  commitMutationEffects,
+} from "./commitWork";
 import { completeWork } from "./completeWork";
-import { createWorkInProgress, FiberNode, FiberRootNode } from "./fiber";
+import {
+  createWorkInProgress,
+  FiberNode,
+  FiberRootNode,
+  PendingPassiveEffect,
+} from "./fiber";
 import { MutationMask, NoFlags, PassiveMask } from "./flags";
 import { Lane, NoLane } from "./lane";
-import scheduler from "../scheduler";
+import scheduler, { PriorityLevel } from "../scheduler";
 import { flushSyncCallbacks, scheduleSyncCallback } from "./syncTaskQueue";
 import { HostRoot } from "./workTag";
+import { HookHasEffect, Passive } from "./hookEffectTags";
 
 /** 全局变量，表示当前正在处理的Fiber */
 let workInProgress: FiberNode = null;
@@ -59,7 +70,6 @@ export function performSyncWorkOnRoot(root: FiberRootNode) {
   renderRoot(root, NoLane, false);
   // 设置root.finishedWork
   root.finishedWork = root.current.alternate;
-console.log(root.finishedWork)
   commitRoot(root);
 }
 
@@ -165,7 +175,7 @@ export function renderRoot(
       /** 使用try catch保证workLoop顺利执行 多次尝试 */
       workLoopRetryTimes++;
       if (workLoopRetryTimes > 20) {
-        console.warn("workLoop执行错误！",e);
+        console.warn("workLoop执行错误！", e);
         break;
       }
     }
@@ -177,6 +187,14 @@ export function commitRoot(root: FiberRootNode) {
   const finishedWork = root.finishedWork;
   if (finishedWork === null) return;
   root.finishedWork = null;
+
+  /** 设置调度 执行passiveEffect */
+  /** 真正执行会在commit之后 不影响渲染 */
+  /** commit阶段会收集effect到root.pendingPassiveEffect */
+  scheduler.scheduleCallback(
+    PriorityLevel.NORMAL_PRIORITY,
+    flushPassiveEffect.bind(null, root.pendingPassiveEffects)
+  );
 
   /** hostRootFiber是否有effect  */
   const hostRootFiberHasEffect =
@@ -193,4 +211,23 @@ export function commitRoot(root: FiberRootNode) {
   // commit完成 修改current指向新的树
   root.current = finishedWork;
   // ensureRootIsScheduled(root);
+}
+
+// 处理被动Effect
+// 此函数会被作为宏任务调用 / 使用schduler调度
+function flushPassiveEffect(pendingPassiveEffect: PendingPassiveEffect) {
+  // 处理卸载 把所有的Passive flag的effect都执行destor
+  pendingPassiveEffect.unmount.forEach((unmountEffect) => {
+    commitHookEffectListUnmount(Passive, unmountEffect);
+  });
+  pendingPassiveEffect.unmount = [];
+  // 处理update 的destory flag为Passive|HookHasEffect
+  pendingPassiveEffect.update.forEach((updateEffect) => {
+    commitHookEffectListDestory(Passive | HookHasEffect, updateEffect);
+  });
+  // 处理update的create flag为Passive| HookHasEffect
+  pendingPassiveEffect.update.forEach((updateEffect) => {
+    commitHookEffectListCreate(Passive | HookHasEffect, updateEffect);
+  });
+  pendingPassiveEffect.update = [];
 }

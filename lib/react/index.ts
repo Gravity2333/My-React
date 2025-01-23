@@ -4,6 +4,7 @@
  *  文字，TEXT_ELEMENT_TYPE
  */
 
+import { EffectCallback, HookDeps } from "../react-reconciler/fiberHooks";
 import { REACT_ELEMENT_TYPE } from "../react-reconciler/ReactSymbols";
 import { currentDispatcher, resolveDispatcher } from "./currentDispatcher";
 
@@ -60,4 +61,9 @@ export function createElement(
 export function useState<State>(initialState: (() => State) | State) {
   const dispatcher = resolveDispatcher();
   return dispatcher.useState(initialState);
+}
+
+export function useEffect(create: EffectCallback, deps: HookDeps) {
+  const dispatcher = resolveDispatcher();
+  return dispatcher.useEffect(create, deps);
 }

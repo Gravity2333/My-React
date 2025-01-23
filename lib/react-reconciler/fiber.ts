@@ -9,10 +9,18 @@ import {
 import { REACT_FRAGMENT_TYPE } from "./ReactSymbols";
 import { UpdateQueue } from "./updateQueue";
 import { Fragment, FunctionComponent, HostComponent, WorkTag } from "./workTag";
+import { Effect } from "./fiberHooks";
 
 export type Container = Element;
 export type Instance = Element;
 export type TextInstance = Text;
+
+export interface PendingPassiveEffect {
+  // 更新的effect
+  update: Effect[];
+  // 卸载的effect
+  unmount: Effect[];
+}
 
 /** Fiber节点类 */
 export class FiberNode {
@@ -80,6 +88,9 @@ export class FiberRootNode {
   container: Container;
   finishedWork: FiberNode | null;
 
+  /** 表示commit阶段收集到的 等待被处理的被动Effect  被动Effect: 不会引起重新渲染的effect*/
+  pendingPassiveEffects: PendingPassiveEffect;
+
   /** 需要传入container 和 第一个HostRootFiber */
   constructor(conatiner: Container, hostRootFiber: FiberNode) {
     /** 保存container */
@@ -91,6 +102,12 @@ export class FiberRootNode {
      */
     this.current = hostRootFiber;
     hostRootFiber.stateNode = this;
+
+    /** 初始化pendingPassiveEffect */
+    this.pendingPassiveEffects = {
+      unmount: [],
+      update: []
+    }
   }
 }
 
@@ -134,7 +151,7 @@ export function createWorkInProgress(
   //  这里需要注意，只需要复用child 可以理解为 新的节点的child指向currentFiber.child 因为后面diff的时候 只需要用的child，仅做对比，
   // 后面会创建新的fiber 此处不需要sibling和return 进行了连接 可以理解成 只复用alternate的内容 不复用其节点之间的关系
   // stateNode也不需要复用 因为alternate和currentFiber之间 如果有关联，那么type一定是相等的
-  wip.child = currentFiber.child
+  wip.child = currentFiber.child;
   return wip;
 }
 
@@ -157,9 +174,9 @@ export function creareFiberFromElement(element: ReactElement): FiberNode {
     return createFiberFromFragment(element.props.children, element.key);
   }
 
-  const fiber =  new FiberNode(fiberTag, pendingProps, element.key);
-	fiber.type = element.type;
-  return fiber
+  const fiber = new FiberNode(fiberTag, pendingProps, element.key);
+  fiber.type = element.type;
+  return fiber;
 }
 
 export function createFiberFromFragment(

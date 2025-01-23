@@ -3,6 +3,8 @@
  * 最后一个Update的next又指向第一个Update
  */
 
+import { Effect } from "./fiberHooks";
+
 /** 更新的Action 可以是State 也可以是函数 */
 export type Action<State> = State | ((prevState: State) => State);
 /** 定义Dispatch函数 */
@@ -49,7 +51,7 @@ export class UpdateQueue<State> {
   }
 
   /** 处理任务 */
-  process(baseState: State,clean=false) {
+  process(baseState: State, clean = false) {
     /** 遍历pending */
     let current = this.shared.pending?.next || null; // 第一个元素
     if (!current) return { memorizedState: baseState };
@@ -66,11 +68,17 @@ export class UpdateQueue<State> {
       current = current.next;
     } while (current !== this.shared.pending.next);
 
-    if(clean){
-      this.shared.pending = null
+    if (clean) {
+      this.shared.pending = null;
     }
     return {
       memorizedState: newState,
     };
   }
 }
+
+/** 函数组件专用的UpdateQueue增加了lastEffect 指向当前收集到的Effect */
+export class FCUpdateQueue<State> extends UpdateQueue<State> {
+  public lastEffect: Effect | null = null;
+}
+

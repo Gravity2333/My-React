@@ -4,12 +4,21 @@ import {
   Flags,
   MutationMask,
   NoFlags,
+  PassiveEffect,
   PassiveMask,
   Placement,
   Update,
 } from "./flags";
 import { updateFiberProps } from "../events/SyntheticEvent";
-import { HostComponent, HostRoot, HostText } from "./workTag";
+import {
+  FunctionComponent,
+  HostComponent,
+  HostRoot,
+  HostText,
+} from "./workTag";
+import { FCUpdateQueue } from "./updateQueue";
+import { Effect, EffectCallback } from "./fiberHooks";
+import { HookHasEffect } from "./hookEffectTags";
 
 /** commit回调类型 */
 type CommitCallback = (finishedWork: FiberNode, root: FiberRootNode) => void;
@@ -66,14 +75,37 @@ const commitMutationEffectsOnFiber: CommitCallback = (finishedWork, root) => {
     finishedWork.flags &= ~Update;
   }
 
-  if (flags & ChildDeletion) {
+  if ((flags & ChildDeletion) !== NoFlags) {
     const deletion = finishedWork.delections;
     deletion.forEach((deleteOldFiber) => {
-      commitDeletion(deleteOldFiber);
+      commitDeletion(deleteOldFiber, root);
     });
     finishedWork.flags &= ~ChildDeletion;
   }
+
+  if ((flags & PassiveEffect) !== NoFlags) {
+    // 存在被动副作用
+    commitPassiveEffect(finishedWork, root, "update");
+  }
 };
+
+/** 收集被动副作用，这个函数可能会在
+ *  1. commitMutationEffectsOnFiber调用
+ *  2.  在delection时调用
+ */
+function commitPassiveEffect(
+  fiber: FiberNode,
+  root: FiberRootNode,
+  type: "update" | "unmount"
+) {
+  if (fiber.tag !== FunctionComponent) return;
+  if (type === "update" && (fiber.flags & PassiveEffect) === NoFlags) return;
+  const fcUpdateQueue = fiber.updateQueue as FCUpdateQueue<Effect>;
+  if (fcUpdateQueue && fcUpdateQueue.lastEffect) {
+    // 收集effect
+    root.pendingPassiveEffects[type].push(fcUpdateQueue.lastEffect);
+  }
+}
 
 /** 处理Placement */
 function commitPlacement(finishedWork: FiberNode) {
@@ -102,7 +134,7 @@ function commitUpdate(fiber: FiberNode) {
 }
 
 /** 删除节点 */
-function commitDeletion(fiber: FiberNode) {
+function commitDeletion(fiber: FiberNode, root: FiberRootNode) {
   const parent = getHostParent(fiber);
 
   if (
@@ -110,6 +142,8 @@ function commitDeletion(fiber: FiberNode) {
     (fiber.tag === HostComponent || fiber.tag === HostText)
   ) {
     parent.removeChild(fiber.stateNode);
+  } else if (fiber.tag === FunctionComponent) {
+    commitPassiveEffect(fiber, root, "unmount");
   } else {
     // fiber不是host 递归查找
     let hostChild = fiber.child;
@@ -262,6 +296,63 @@ function insertOrAppendPlacementNodeIntoConatiner(
       child = child.sibling;
     }
   }
+}
+
+/** effect相关 遍历lastEffect 根据flags判断是否需要执行 调用callback */
+function commitHookEffectList(
+  flags: Flags,
+  lastEffect: Effect | null,
+  callback: (effect: Effect) => void
+) {
+  let currentEffect = lastEffect.next;
+  do {
+    if ((flags & currentEffect.tags) === flags) {
+      // flag必须完全相等 执行callback
+      callback(currentEffect);
+    }
+    currentEffect = currentEffect.next;
+  } while (currentEffect !== lastEffect.next);
+}
+
+/** 执行卸载的effect */
+export function commitHookEffectListUnmount(
+  flags: Flags,
+  lastEffect: Effect | null
+) {
+  commitHookEffectList(flags, lastEffect, (effect) => {
+    const destory = effect.destory;
+    if (typeof destory === "function") {
+      destory();
+    }
+    effect.tags &= ~HookHasEffect;
+  });
+}
+
+/** 执行destory的effect */
+export function commitHookEffectListDestory(
+  flags: Flags,
+  lastEffect: Effect | null
+) {
+  commitHookEffectList(flags, lastEffect, (effect) => {
+    const destory = effect.destory;
+    if (typeof destory === "function") {
+      destory();
+    }
+  });
+}
+
+/** 执行创建的effect */
+export function commitHookEffectListCreate(
+  flags: Flags,
+  lastEffect: Effect | null
+) {
+  commitHookEffectList(flags, lastEffect, (effect) => {
+    const create = effect.create;
+    if (typeof create === "function") {
+      // 设置destory
+      effect.destory = create() as EffectCallback;
+    }
+  });
 }
 
 export const commitMutationEffects = commitEffect(

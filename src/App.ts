@@ -1,15 +1,33 @@
-import { createElement, useState } from "../lib/react";
+import { createElement, useEffect, useState } from "../lib/react";
+
+async function fetchMockMessaage(): Promise<string> {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve("Message From Mock Fetch!!!");
+    }, 1000);
+  });
+}
 
 export default function App() {
   const [count, setCount] = useState<number>(0);
 
   const [appMessage, setAppMessage] = useState<string>(
-    "hello message from hooks"
+    "loading..."
   );
 
-  const [type, setType] = useState<"counter" | "input">("counter");
-  console.log(type);
-  const elements = createElement(
+  const [type, setType] = useState<"counter" | "input">("input");
+
+  useEffect(() => {
+    console.log("app mount");
+    (async () => {
+      setAppMessage(await fetchMockMessaage())
+    })();
+    return () => {
+      console.log("app unmount");
+    };
+  }, []);
+
+  return createElement(
     "div", // 最外层容器
     {
       style: {
@@ -210,6 +228,4 @@ export default function App() {
       )
     )
   );
-  console.log("app rerender", count, elements);
-  return elements;
 }
