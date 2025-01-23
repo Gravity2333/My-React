@@ -118,10 +118,10 @@ export function createWorkInProgress(
     currentFiber.alternate = wip;
   } else {
     /** update节点，复用 重置副作用 */
-    currentFiber.flags = NoFlags;
-    currentFiber.subTreeFlags = NoFlags;
-    currentFiber.pendingProps = pendingProps;
-    currentFiber.delections = null;
+    wip.flags = NoFlags;
+    wip.subTreeFlags = NoFlags;
+    wip.pendingProps = pendingProps;
+    wip.delections = null;
   }
 
   // 剩下的可以复用
@@ -134,7 +134,7 @@ export function createWorkInProgress(
   //  这里需要注意，只需要复用child 可以理解为 新的节点的child指向currentFiber.child 因为后面diff的时候 只需要用的child，仅做对比，
   // 后面会创建新的fiber 此处不需要sibling和return 进行了连接 可以理解成 只复用alternate的内容 不复用其节点之间的关系
   // stateNode也不需要复用 因为alternate和currentFiber之间 如果有关联，那么type一定是相等的
-  wip.child = null;
+  wip.child = currentFiber.child
   return wip;
 }
 

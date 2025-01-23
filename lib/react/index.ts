@@ -5,18 +5,18 @@
  */
 
 import { REACT_ELEMENT_TYPE } from "../react-reconciler/ReactSymbols";
+import { currentDispatcher, resolveDispatcher } from "./currentDispatcher";
 
-export type ReactElementType =
-  | string
-  | Function
-  | Symbol
-  | number;
+export type ReactElementType = string | Function | Symbol | number;
 /** 属性类型 */
 export type ReactElementProps = Record<string, any>;
 /** key */
 export type Key = string;
 /** children  */
-export type ReactElementChildren = ReactElement | string | Array<ReactElementChildren>;
+export type ReactElementChildren =
+  | ReactElement
+  | string
+  | Array<ReactElementChildren>;
 
 /** Element元素类型 */
 export interface ReactElement {
@@ -42,11 +42,10 @@ export function createElement(
   props: ReactElementProps,
   ...children: ReactElementChildren[]
 ): ReactElement {
- 
   return {
     $$typeof: REACT_ELEMENT_TYPE,
     type,
-    key: props.key ? String(props.key) : undefined,
+    key: props.key ? String(props.key) : null,
     props: {
       ...props,
       /** 源码这里做了处理 如果只有一个child 直接放到children 如果有多个 则children为一个数组 */
@@ -56,4 +55,9 @@ export function createElement(
           : children.map(handleChildren),
     },
   };
+}
+
+export function useState<State>(initialState: (() => State) | State) {
+  const dispatcher = resolveDispatcher();
+  return dispatcher.useState(initialState);
 }

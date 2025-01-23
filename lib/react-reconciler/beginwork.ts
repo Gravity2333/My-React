@@ -8,6 +8,7 @@ import {
   HostRoot,
   HostText,
 } from "./workTag";
+import { renderWithHooks } from "./fiberHooks";
 
 /** 递的过程 */
 export function beginWork(wip: FiberNode): FiberNode | null {
@@ -42,7 +43,7 @@ function reconcileChildren(wip: FiberNode, children: ReactElementChildren) {
    * 并不需要对其进行挂载等操作，由于hostRootFiber 一定有alternate节点，在prepareRefreshStack中构建，所以只在hostRootFiber中挂载即可
    */
 
-  if (wip.alternate) {
+  if (wip.alternate !== null) {
     // update阶段
     wip.child = reconcileChildFiber(wip, wip.child, children);
   } else {
@@ -85,9 +86,7 @@ function updateHostComponent(wip: FiberNode): FiberNode {
 
 /** 处理函数节点的比较 */
 function updateFunctionComponent(wip: FiberNode): FiberNode {
-  const Component = wip.type as Function;
-  const pendingProps = wip.pendingProps;
-  const nextChildElement = Component(pendingProps);
+  const nextChildElement = renderWithHooks(wip);
   reconcileChildren(wip, nextChildElement);
   return wip.child;
 }

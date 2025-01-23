@@ -1,6 +1,11 @@
-import { createElement } from "../lib/react";
+import { createElement, useState } from "../lib/react";
 
 export default function App() {
+  const [count, setCount] = useState<number>(0);
+
+  const [appMessage, setAppMessage] = useState<string>(
+    "hello message from hooks"
+  );
   const elements = createElement(
     "div", // 最外层容器
     {
@@ -14,6 +19,37 @@ export default function App() {
         color: "#333",
       },
     },
+    // createElement("div", {}, "计数器：", String(count)),
+
+    // // 创建按钮 +1
+    // createElement(
+    //   "button",
+    //   {
+    //     key: "btn1",
+    //     style: {
+    //       backgroundColor: "#4CAF50", // 绿色
+    //       color: "white",
+    //       padding: "12px 25px",
+    //       border: "none",
+    //       borderRadius: "5px",
+    //       cursor: "pointer",
+    //       fontSize: "16px",
+    //       transition: "all 0.3s ease",
+    //       boxShadow: "0 4px 6px rgba(0, 0, 0, 0.2)",
+    //     },
+    //     onClick: () => {
+    //       setCount((prev) => prev + 1);
+    //     },
+    //     onMouseEnter: (e) => {
+    //       e.target.style.transform = "scale(1.1)";
+    //     },
+    //     onMouseLeave: (e) => {
+    //       e.target.style.transform = "scale(1)";
+    //     },
+    //   },
+    //   "+1"
+    // )
+
     createElement(
       "div", // 创建一个卡片容器
       {
@@ -28,29 +64,43 @@ export default function App() {
         },
       },
       // 标题部分
-      createElement("h1", {
-        style: {
-          color: "#61dafb", // React 蓝色
-          fontSize: "28px",
-          fontWeight: "700",
-          marginBottom: "10px",
+      createElement(
+        "h1",
+        {
+          style: {
+            color: "#61dafb", // React 蓝色
+            fontSize: "28px",
+            fontWeight: "700",
+            marginBottom: "10px",
+          },
         },
-      }, "Welcome to MyReact Demo"),
+        "Welcome to MyReact Demo"
+      ),
 
       // 描述文本
-      createElement("p", {
-        style: {
-          color: "#666",
-          fontSize: "18px",
-          marginBottom: "30px",
-          lineHeight: "1.6",
+      createElement(
+        "p",
+        {
+          style: {
+            color: "#666",
+            fontSize: "18px",
+            marginBottom: "30px",
+            lineHeight: "1.6",
+          },
         },
-      }, "This is a simple page built using MyReact. Below are two interactive buttons."),
+        "This is a simple page built using MyReact. Below are two interactive buttons."
+      ),
 
       // 按钮区
       createElement(
         "div",
-        { style: { display: "flex", justifyContent: "space-evenly", gap: "20px" } },
+        {
+          style: {
+            display: "flex",
+            justifyContent: "space-evenly",
+            gap: "20px",
+          },
+        },
         // 创建按钮 +1
         createElement(
           "button",
@@ -67,8 +117,8 @@ export default function App() {
               transition: "all 0.3s ease",
               boxShadow: "0 4px 6px rgba(0, 0, 0, 0.2)",
             },
-            onClick: (e) => {
-              console.log("Button +1 clicked", e);
+            onClick: () => {
+              setCount((prev) => prev + 1);
             },
             onMouseEnter: (e) => {
               e.target.style.transform = "scale(1.1)";
@@ -96,8 +146,8 @@ export default function App() {
               transition: "all 0.3s ease",
               boxShadow: "0 4px 6px rgba(0, 0, 0, 0.2)",
             },
-            onClick: (e) => {
-              console.log("Button +2 clicked", e);
+            onClick: () => {
+              setCount((prev) => prev + 2);
             },
             onMouseEnter: (e) => {
               e.target.style.transform = "scale(1.1)";
@@ -110,17 +160,25 @@ export default function App() {
         )
       ),
 
+      createElement("div", {}, "计数器：", String(count)),
+
       // 底部文本
-      createElement("p", {
-        style: {
-          color: "#888",
-          fontSize: "14px",
-          marginTop: "30px",
-          fontStyle: "italic",
+      createElement(
+        "p",
+        {
+          style: {
+            color: "#888",
+            fontSize: "14px",
+            marginTop: "30px",
+            fontStyle: "italic",
+          },
         },
-      }, "Created with MyReact. Enjoy!")
+        "Created with MyReact. Enjoy!"
+      ),
+
+      appMessage
     )
   );
-
+  console.log("app rerender", count,elements);
   return elements;
 }

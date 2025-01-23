@@ -59,6 +59,7 @@ export function performSyncWorkOnRoot(root: FiberRootNode) {
   renderRoot(root, NoLane, false);
   // 设置root.finishedWork
   root.finishedWork = root.current.alternate;
+console.log(root.finishedWork)
   commitRoot(root);
 }
 
@@ -84,6 +85,7 @@ function prepareRefreshStack(root: FiberRootNode, lane: Lane) {
   /** 这里在首次进入的时候 会创建一个新的hostRootFiber
    * 在react中存在两棵fiber树，两个hostRootFiber根节点 用alternate链接，成为双缓存
    */
+
   workInProgress = createWorkInProgress(root.current, {});
 }
 
@@ -163,7 +165,7 @@ export function renderRoot(
       /** 使用try catch保证workLoop顺利执行 多次尝试 */
       workLoopRetryTimes++;
       if (workLoopRetryTimes > 20) {
-        console.warn("workLoop执行错误！");
+        console.warn("workLoop执行错误！",e);
         break;
       }
     }

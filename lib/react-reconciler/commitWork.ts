@@ -95,7 +95,7 @@ function commitPlacement(finishedWork: FiberNode) {
 /** 处理update副作用 */
 function commitUpdate(fiber: FiberNode) {
   if (fiber.tag === HostText) {
-    fiber.stateNode.textContent = fiber.memorizedProps.content;
+    fiber.stateNode.nodeValue = fiber.memorizedProps.content;
   } else {
     updateFiberProps(fiber.stateNode, fiber.memorizedProps);
   }

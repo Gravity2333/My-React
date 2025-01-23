@@ -25,10 +25,9 @@ export function completeWork(wip: FiberNode) {
       if (currentFiber && currentFiber.stateNode) {
         // update
         // 检查pendingProps和memroizedProps 如何不同则打上Update更新标签
-        if (pendingProps === wip.memorizedProps) {
-          return;
+        if (pendingProps !== wip.memorizedProps) {
+          wip.flags != Update;
         }
-        wip.flags != Update;
       } else {
         // mount
         // 挂载阶段，直接创建DOM,保存到stateNode
@@ -47,10 +46,9 @@ export function completeWork(wip: FiberNode) {
     case HostText:
       if (currentFiber && currentFiber.stateNode) {
         // update
-        if (currentFiber.memorizedProps?.content === pendingProps?.content) {
-          return;
+        if (currentFiber.memorizedProps?.content !== pendingProps?.content) {
+          wip.flags |= Update;
         }
-        wip.flags |= Update;
       } else {
         // mount
         const textInstance = document.createTextNode(pendingProps?.content);
@@ -112,7 +110,7 @@ function appendAllChildren(instance: Element, wip: FiberNode) {
 function bubbleProperties(wip: FiberNode) {
   let subtreeFlags = NoFlags;
   // TODO childLanes
-  let node = wip.child;
+  let node = wip.child || null;
   while (node !== null) {
     // merge subtreeFlags
     subtreeFlags |= node.subTreeFlags;

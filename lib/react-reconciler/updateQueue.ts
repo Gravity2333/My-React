@@ -51,7 +51,7 @@ export class UpdateQueue<State> {
   /** 处理任务 */
   process(baseState: State) {
     /** 遍历pending */
-    let current = this.shared.pending.next; // 第一个元素
+    let current = this.shared.pending?.next || null; // 第一个元素
     if (!current) return { memorizedState: baseState };
     let newState: State = baseState;
     do {
@@ -65,6 +65,7 @@ export class UpdateQueue<State> {
       }
       current = current.next;
     } while (current !== this.shared.pending.next);
+
     return {
       memorizedState: newState,
     };

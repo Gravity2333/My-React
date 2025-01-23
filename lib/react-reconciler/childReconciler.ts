@@ -227,7 +227,6 @@ function childReconciler(shouldTrackEffect: boolean) {
     currentChild: FiberNode,
     newChild: any
   ): FiberNode => {
-
     // 处理Fragment
     if (typeof (newChild as ReactElement) === "object" && newChild !== null) {
       if ((newChild as ReactElement).type === REACT_FRAGMENT_TYPE) {
@@ -242,7 +241,7 @@ function childReconciler(shouldTrackEffect: boolean) {
       // 如果是单节点 看是否key type一样 是否可复用
       return reconcileSingle(wip, currentChild, newChild);
     }
- 
+
     // 如果是文本节点 (文字或者数字 -> 转换成文本节点)
     if (typeof newChild === "string" || typeof newChild === "number") {
       return reconcileTextNode(wip, currentChild, newChild);
@@ -274,7 +273,11 @@ function generateNewFiberFromMap(
   const elementKey: Key = String(
     Array.isArray(element) ||
       typeof element === "string" ||
-      typeof element === "number"
+      typeof element === "number" ||
+      element === undefined ||
+      element === null ||
+      element.key === null ||
+      element.key === undefined
       ? index
       : element.key
   );
@@ -316,7 +319,7 @@ function generateNewFiberFromMap(
     element !== null &&
     element.$$typeof === REACT_ELEMENT_TYPE
   ) {
-    if (beforeFiber) {
+    if (beforeFiber && beforeFiber.type === element.type) {
       existingChildren.delete(elementKey);
       return useFiber(beforeFiber, element.props);
     } else {
