@@ -84,7 +84,9 @@ function mountState<T>(initialState): [T, Dispatch<T>] {
 /** 更新state */
 function updateState<T>(): [T, Dispatch<T>] {
   const hook = updateWorkInProgressHook();
-  const { memorizedState } = hook.updateQueue.process(hook.memorizedState);
+
+  const { memorizedState } = hook.updateQueue.process(hook.memorizedState,true);
+  hook.memorizedState = memorizedState
   return [memorizedState, hook.updateQueue.dispatch];
 }
 

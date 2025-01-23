@@ -6,6 +6,9 @@ export default function App() {
   const [appMessage, setAppMessage] = useState<string>(
     "hello message from hooks"
   );
+
+  const [type, setType] = useState<"counter" | "input">("counter");
+  console.log(type);
   const elements = createElement(
     "div", // 最外层容器
     {
@@ -91,76 +94,106 @@ export default function App() {
         "This is a simple page built using MyReact. Below are two interactive buttons."
       ),
 
-      // 按钮区
       createElement(
-        "div",
+        "button",
         {
-          style: {
-            display: "flex",
-            justifyContent: "space-evenly",
-            gap: "20px",
+          onClick: () => {
+            setType((prev) => {
+              if (prev === "counter") {
+                return "input";
+              } else {
+                return "counter";
+              }
+            });
           },
         },
-        // 创建按钮 +1
-        createElement(
-          "button",
-          {
-            key: "btn1",
-            style: {
-              backgroundColor: "#4CAF50", // 绿色
-              color: "white",
-              padding: "12px 25px",
-              border: "none",
-              borderRadius: "5px",
-              cursor: "pointer",
-              fontSize: "16px",
-              transition: "all 0.3s ease",
-              boxShadow: "0 4px 6px rgba(0, 0, 0, 0.2)",
-            },
-            onClick: () => {
-              setCount((prev) => prev + 1);
-            },
-            onMouseEnter: (e) => {
-              e.target.style.transform = "scale(1.1)";
-            },
-            onMouseLeave: (e) => {
-              e.target.style.transform = "scale(1)";
-            },
-          },
-          "+1"
-        ),
-
-        // 创建按钮 +2
-        createElement(
-          "button",
-          {
-            key: "btn2",
-            style: {
-              backgroundColor: "#2196F3", // 蓝色
-              color: "white",
-              padding: "12px 25px",
-              border: "none",
-              borderRadius: "5px",
-              cursor: "pointer",
-              fontSize: "16px",
-              transition: "all 0.3s ease",
-              boxShadow: "0 4px 6px rgba(0, 0, 0, 0.2)",
-            },
-            onClick: () => {
-              setCount((prev) => prev + 2);
-            },
-            onMouseEnter: (e) => {
-              e.target.style.transform = "scale(1.1)";
-            },
-            onMouseLeave: (e) => {
-              e.target.style.transform = "scale(1)";
-            },
-          },
-          "+2"
-        )
+        type
       ),
 
-      createElement("div", {}, "计数器：", String(count)),
+      type === "counter"
+        ? createElement(
+            "div",
+            {
+              style: {
+                backgroundColor: "lightgray",
+              },
+            },
+            // 创建按钮 +1
+            createElement(
+              "button",
+              {
+                key: "btn1",
+                style: {
+                  backgroundColor: "#4CAF50", // 绿色
+                  color: "white",
+                  padding: "12px 25px",
+                  border: "none",
+                  borderRadius: "5px",
+                  cursor: "pointer",
+                  fontSize: "16px",
+                  transition: "all 0.3s ease",
+                  boxShadow: "0 4px 6px rgba(0, 0, 0, 0.2)",
+                },
+                onClick: () => {
+                  setCount((prev) => prev + 1);
+                },
+                onMouseEnter: (e) => {
+                  e.target.style.transform = "scale(1.1)";
+                },
+                onMouseLeave: (e) => {
+                  e.target.style.transform = "scale(1)";
+                },
+              },
+              "+1"
+            ),
+
+            // 创建按钮 +2
+            createElement(
+              "button",
+              {
+                key: "btn2",
+                style: {
+                  backgroundColor: "#2196F3", // 蓝色
+                  color: "white",
+                  padding: "12px 25px",
+                  border: "none",
+                  borderRadius: "5px",
+                  cursor: "pointer",
+                  fontSize: "16px",
+                  transition: "all 0.3s ease",
+                  boxShadow: "0 4px 6px rgba(0, 0, 0, 0.2)",
+                },
+                onClick: () => {
+                  setCount((prev) => prev + 2);
+                },
+                onMouseEnter: (e) => {
+                  e.target.style.transform = "scale(1.1)";
+                },
+                onMouseLeave: (e) => {
+                  e.target.style.transform = "scale(1)";
+                },
+              },
+              "+2"
+            ),
+
+            createElement("div", {}, "计数器：", String(count))
+          )
+        : createElement(
+            "div",
+            {},
+            createElement("input", {
+              onInput: (e) => {
+                setAppMessage(e.target.value);
+              },
+              value: appMessage,
+              style: {
+                display: "block",
+                width: "100%",
+              },
+              placeholder: "请输入内容",
+            }),
+            appMessage
+          ),
 
       // 底部文本
       createElement(
@@ -174,11 +207,9 @@ export default function App() {
           },
         },
         "Created with MyReact. Enjoy!"
-      ),
-
-      appMessage
+      )
     )
   );
-  console.log("app rerender", count,elements);
+  console.log("app rerender", count, elements);
   return elements;
 }
