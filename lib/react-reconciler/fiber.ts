@@ -10,6 +10,7 @@ import { REACT_FRAGMENT_TYPE } from "./ReactSymbols";
 import { UpdateQueue } from "./updateQueue";
 import { Fragment, FunctionComponent, HostComponent, WorkTag } from "./workTag";
 import { Effect } from "./fiberHooks";
+import { Lane, Lanes, NoLane, NoLanes } from "./fiberLanes";
 
 export type Container = Element;
 export type Instance = Element;
@@ -91,6 +92,12 @@ export class FiberRootNode {
   /** 表示commit阶段收集到的 等待被处理的被动Effect  被动Effect: 不会引起重新渲染的effect*/
   pendingPassiveEffects: PendingPassiveEffect;
 
+  /** 和lane相关的属性 */
+  /** 当前还未运行的任务的lane合集 */
+  pendingLanes: Lanes;
+  /** 已经完成运行的更新对应的lane 在render阶段结束之后设置，在commit阶段置空 类似于finishedWork */
+  finishedLane: Lane;
+
   /** 需要传入container 和 第一个HostRootFiber */
   constructor(conatiner: Container, hostRootFiber: FiberNode) {
     /** 保存container */
@@ -106,8 +113,12 @@ export class FiberRootNode {
     /** 初始化pendingPassiveEffect */
     this.pendingPassiveEffects = {
       unmount: [],
-      update: []
-    }
+      update: [],
+    };
+
+    /** 初始化lane */
+    this.pendingLanes = NoLanes;
+    this.finishedLane = NoLane;
   }
 }
 

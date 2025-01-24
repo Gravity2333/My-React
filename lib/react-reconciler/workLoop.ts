@@ -13,7 +13,7 @@ import {
   PendingPassiveEffect,
 } from "./fiber";
 import { MutationMask, NoFlags, PassiveMask } from "./flags";
-import { Lane, NoLane } from "./lane";
+import { Lane, NoLane } from "./fiberLanes";
 import scheduler, { PriorityLevel } from "../scheduler";
 import { flushSyncCallbacks, scheduleSyncCallback } from "./syncTaskQueue";
 import { HostRoot } from "./workTag";
