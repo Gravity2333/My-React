@@ -57,6 +57,12 @@ export class FiberNode {
   // 双缓存
   alternate: FiberNode | null;
 
+  /** lane相关 */
+  /** 当前fiber上的更新lanes */
+  lanes: Lanes;
+  /** 当前fiber的子fiber树上的优先级 */
+  childLanes: Lanes;
+
   constructor(tag: WorkTag, pendingProps: ReactElementProps, key: Key) {
     // 没传key的情况下 都是null 在Diff reconcileArray的时候 会使用index
     this.key = key || null;
@@ -80,6 +86,10 @@ export class FiberNode {
 
     this.updateQueue = null;
     this.alternate = null;
+
+    /** lanes相关 */
+    this.lanes = NoLanes;
+    this.childLanes = NoLanes;
   }
 }
 
@@ -163,6 +173,10 @@ export function createWorkInProgress(
   // 后面会创建新的fiber 此处不需要sibling和return 进行了连接 可以理解成 只复用alternate的内容 不复用其节点之间的关系
   // stateNode也不需要复用 因为alternate和currentFiber之间 如果有关联，那么type一定是相等的
   wip.child = currentFiber.child;
+
+  /** 注意复用的时候 一定要把lane拷贝过去 */
+  wip.lanes = currentFiber.lanes;
+  wip.childLanes = currentFiber.childLanes;
   return wip;
 }
 

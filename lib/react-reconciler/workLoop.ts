@@ -13,23 +13,53 @@ import {
   PendingPassiveEffect,
 } from "./fiber";
 import { MutationMask, NoFlags, PassiveMask } from "./flags";
-import { Lane, NoLane } from "./fiberLanes";
+import {
+  getNextLane,
+  Lane,
+  lanesToSchedulerPriority,
+  markRootFinished,
+  markRootUpdated,
+  mergeLane,
+  NoLane,
+  SyncLane,
+} from "./fiberLanes";
 import scheduler, { PriorityLevel } from "../scheduler";
 import { flushSyncCallbacks, scheduleSyncCallback } from "./syncTaskQueue";
 import { HostRoot } from "./workTag";
 import { HookHasEffect, Passive } from "./hookEffectTags";
 
+/** 工作中间状态 */
+// 工作中的状态
+const RootInProgress = 0;
+/**
+ * RootInComplete 和 RootCompleted 用来控制并发模式下 重新执行performConcurrentOnRoot
+ * 这个状态由renderRoot返回 判断方式是 并发模式 在workConcurrentkloop执行后 workInProgress不为 null
+ * */
+// 并发中间状态
+const RootInComplete = 1;
+// 完成状态
+const RootCompleted = 2;
+// 未完成状态，不用进入commit阶段
+const RootDidNotComplete = 3;
+
 /** 全局变量，表示当前正在处理的Fiber */
 let workInProgress: FiberNode = null;
+/** 表示当前正在render阶段对应的任务对应的lane 用来在任务中断后重启判断跳过初始化流程 */
+let wipRootRenderLane: Lane = NoLane;
 
 /**
  * 从当前fiberNode找到root节点 并且更新沿途fiber的childLanes
  * @param fiberNode
  */
-export function markUpdateLaneFromFiberToRoot(fiberNode: FiberNode) {
+export function markUpdateLaneFromFiberToRoot(
+  fiberNode: FiberNode,
+  lane: Lane
+) {
   let parent = fiberNode.return; // parent表示父节点
   let node = fiberNode; // node标记当前节点
   while (parent !== null) {
+    // 从当前更新节点 把childLanes冒泡上去
+    parent.childLanes = mergeLane(parent.childLanes, lane);
     // 处理parent节点的childLanes
     node = parent;
     parent = parent.return;
@@ -44,42 +74,97 @@ export function markUpdateLaneFromFiberToRoot(fiberNode: FiberNode) {
 }
 
 /** 在Fiber中调度更新 */
-export function scheduleUpdateOnFiber(fiberNode: FiberNode) {
+export function scheduleUpdateOnFiber(fiberNode: FiberNode, lane: Lane) {
   /** 先从更新的fiber节点递归到hostRootFiber
    *  这个过程中，一个目的是寻找fiberRootNode节点
-   *  一个是更新沿途的 childLines  TODO
+   *  一个是更新沿途的 childLines
    */
-  const fiberRootNode = markUpdateLaneFromFiberToRoot(fiberNode);
-  // 更新root的pendingLane
+  const fiberRootNode = markUpdateLaneFromFiberToRoot(fiberNode, lane);
+  // 更新root的pendingLane, 更新root节点的pendingLanes 表示当前正在处理的lanes
+  markRootUpdated(fiberRootNode, lane);
   // 保证根节点被正确调度
   ensureRootIsScheduled(fiberRootNode);
 }
 
 export function ensureRootIsScheduled(root: FiberRootNode) {
-  // 先实现同步调度
+  // 先实现同步调度 获取当前最高优先级
+  const highestPriorityLane = getNextLane(root);
+  // 判断，如果不存在优先级 说明没有任务需要继续调度了 直接returna
+  if (highestPriorityLane === NoLane) return;
   // 批处理更新, 微任务调用更新
-  // 调度同步任务，进入同步队列
-  scheduleSyncCallback(performSyncWorkOnRoot.bind(null, root));
-  // 设置微任务回调
-  flushSyncCallbacks();
+  if (highestPriorityLane === SyncLane) {
+    scheduleSyncCallback(performSyncWorkOnRoot.bind(null, root));
+    // 设置微任务回调 冲洗缓冲区
+    flushSyncCallbacks();
+  } else {
+    // 其他优先级 使用scheduler调度
+    scheduler.scheduleCallback(
+      lanesToSchedulerPriority(highestPriorityLane),
+      performConcurrentWorkOnRoot.bind(null, root)
+    );
+  }
 }
 
 /** 从root开始 处理同步任务 */
 export function performSyncWorkOnRoot(root: FiberRootNode) {
+  // 获取当前的优先级
+  const lane = getNextLane(root);
+
+  if (lane !== SyncLane) {
+    /**
+     * 这里 lane如果不是同步任务了，说明同步任务的lane已经被remove 应该执行低优先级的任务了
+     *  此时应该停止执行当前任务 重新调度
+     * 【实现同步任务的批处理，当第一次执行完之后 commit阶段remove SyncLane 这里就继续不下去了，
+     * 后面微任务中的 performSyncWorkOnRoot都不执行了】
+     */
+    return ensureRootIsScheduled(root);
+  }
+
   // 开始生成fiber 关闭并发模式
-  renderRoot(root, NoLane, false);
-  // 设置root.finishedWork
-  root.finishedWork = root.current.alternate;
-  commitRoot(root);
+  const exitStatus = renderRoot(root, lane, false);
+  switch (exitStatus) {
+    // 注意 同步任务一次性执行完 不存在RootInComplete中断的情况
+    case RootCompleted:
+      // 执行成功 设置finishedWork 和 finishedLane 并且commit
+      // 设置root.finishedWork
+      root.finishedWork = root.current.alternate;
+      root.finishedLane = lane;
+      // 设置wipRootRenderLane = NoLane;
+      wipRootRenderLane = NoLane;
+      commitRoot(root);
+    default:
+    // TODO Suspense的情况
+  }
 }
 
-/** 从root开始 处理并发任务 */
-export function performConcurrentWOrkOnRoot(root: FiberRootNode) {
-  // 开始生成fiber 关闭并发模式
-  renderRoot(root, NoLane, true);
-  // 设置root.finishedWork
-  root.finishedWork = root.current.alternate;
-  commitRoot(root);
+/** 从root开始 处理并发任务
+ *  这个函数是要传入schduler中的 其中didTimeout就是当前任务是否超时
+ */
+export function performConcurrentWorkOnRoot(
+  root: FiberRootNode,
+  didTimeout: boolean
+) {
+  const lane = getNextLane(root);
+  if (lane === NoLane) {
+    // 没有任务需要处理了 这里也不需要调度了 用来完成批处理
+    return;
+  }
+
+  // 开始生成fiber 关闭并发模式 ,在没有超时的情况下，可以开启并发中断
+  const exitStatus = renderRoot(root, lane, !didTimeout);
+  switch (exitStatus) {
+    case RootInComplete:
+      // 中断的情况 需要返回subTask 重新注册任务
+      return performConcurrentWorkOnRoot.bind(null, root);
+    case RootCompleted:
+      //任务完成 收尾 commit
+      // 设置root.finishedWork
+      root.finishedWork = root.current.alternate;
+      root.finishedLane = lane;
+      // 设置wipRootRenderLane = NoLane;
+      wipRootRenderLane = NoLane;
+      commitRoot(root);
+  }
 }
 
 /**
@@ -91,6 +176,9 @@ export function performConcurrentWOrkOnRoot(root: FiberRootNode) {
 function prepareRefreshStack(root: FiberRootNode, lane: Lane) {
   // 重新赋finishedWork
   root.finishedWork = null;
+  root.finishedLane = NoLane;
+  // 设置当前的运行任务lane
+  wipRootRenderLane = lane;
   /** 给workInProgress赋值 */
   /** 这里在首次进入的时候 会创建一个新的hostRootFiber
    * 在react中存在两棵fiber树，两个hostRootFiber根节点 用alternate链接，成为双缓存
@@ -145,6 +233,7 @@ function workLoop() {
   }
 }
 
+/** 在并发模式下，如果shouldYieldToHost 则让出主线程 暂停render过程 */
 function workConcurrentLoop() {
   while (workInProgress && !scheduler.shouldYieldToHost()) {
     performUnitOfWork(workInProgress);
@@ -163,8 +252,12 @@ export function renderRoot(
   shouldTimeSlice: boolean
 ) {
   let workLoopRetryTimes = 0;
-  /** 先进行准备初始化 */
-  prepareRefreshStack(root, lane);
+
+  if (wipRootRenderLane !== lane) {
+    // 避免重新进行初始化
+    /** 先进行准备初始化 */
+    prepareRefreshStack(root, lane);
+  }
 
   while (true) {
     try {
@@ -180,13 +273,29 @@ export function renderRoot(
       }
     }
   }
+
+  /** 判断任务是否执行完成 如果执行完成RootCompleted 否则 返回RootInCompleted*/
+  if (shouldTimeSlice && workInProgress !== null) {
+    return RootInComplete;
+  }
+
+  // 任务完成
+  return RootCompleted;
 }
 
 /** commit阶段 */
 export function commitRoot(root: FiberRootNode) {
   const finishedWork = root.finishedWork;
+
+
   if (finishedWork === null) return;
+
+  const lane = root.finishedLane
   root.finishedWork = null;
+  root.finishedLane  = NoLane
+
+  // 从root.pendingLanes去掉当前的lane
+  markRootFinished(root, lane);
 
   /** 设置调度 执行passiveEffect */
   /** 真正执行会在commit之后 不影响渲染 */

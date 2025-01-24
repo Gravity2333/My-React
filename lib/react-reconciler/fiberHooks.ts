@@ -1,5 +1,6 @@
 import { currentDispatcher } from "../react/currentDispatcher";
 import { FiberNode } from "./fiber";
+import { requestUpdateLane } from "./fiberLanes";
 import { Flags, PassiveEffect } from "./flags";
 import { HookHasEffect, Passive } from "./hookEffectTags";
 import {
@@ -197,9 +198,12 @@ function dispatchSetState<State>(
   action: Action<State>
 ) {
   const update = new Update(action);
-  updateQueue.enqueue(update);
-
-  scheduleUpdateOnFiber(fiber);
+  // 获取一个优先级 根据 dispatchSetState 执行所在的上下文
+  const lane = requestUpdateLane();
+  // 入队 并且加入到fiber上
+  updateQueue.enqueue(update, fiber, lane);
+  // 开启调度时，也需要传入当前优先级
+  scheduleUpdateOnFiber(fiber,lane);
 }
 
 /** 挂载Effect */

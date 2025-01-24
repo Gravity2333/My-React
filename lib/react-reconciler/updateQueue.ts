@@ -3,7 +3,9 @@
  * 最后一个Update的next又指向第一个Update
  */
 
+import { FiberNode } from "./fiber";
 import { Effect } from "./fiberHooks";
+import { Lane, mergeLane } from "./fiberLanes";
 
 /** 更新的Action 可以是State 也可以是函数 */
 export type Action<State> = State | ((prevState: State) => State);
@@ -37,7 +39,7 @@ export class UpdateQueue<State> {
   }
 
   /** 入队，构造环状链表 */
-  enqueue(update: Update<State>) {
+  enqueue(update: Update<State>, fiber: FiberNode, lane: Lane) {
     if (this.shared.pending === null) {
       // 插入第一个元素，此时的结构为
       // shared.pending -> firstUpdate.next -> firstUpdate
@@ -48,6 +50,8 @@ export class UpdateQueue<State> {
       update.next = this.shared.pending.next;
       this.shared.pending.next = update;
     }
+    /** 在当前的fiber上设置lane */
+    fiber.lanes = mergeLane(fiber.lanes, lane);
   }
 
   /** 处理任务 */
@@ -81,4 +85,3 @@ export class UpdateQueue<State> {
 export class FCUpdateQueue<State> extends UpdateQueue<State> {
   public lastEffect: Effect | null = null;
 }
-
