@@ -1,6 +1,6 @@
 /** 实现车道模型优先级 */
 
-import { PriorityLevel } from "../scheduler";
+import scheduler, { PriorityLevel } from "../scheduler";
 import { FiberRootNode } from "./fiber";
 
 /** 单车道 */
@@ -179,4 +179,15 @@ export function lanesToSchedulerPriority(lanes: Lanes): PriorityLevel {
     default:
       return PriorityLevel.NORMAL_PRIORITY;
   }
+}
+
+/**
+ * 根据当前update触发上下文 获取update优先级
+ * 比如 setState在effect中触发和在onclick中触发 有不一样的优先级
+ */
+export function requestUpdateLane(): Lane {
+  const currentUpdateLane = schedulerPriorityToLane(
+    scheduler.getCurrentPriorityLevel()
+  );
+  return currentUpdateLane;
 }
