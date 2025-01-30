@@ -210,7 +210,7 @@ function completeUnitOfWork(fiber: FiberNode) {
  */
 function performUnitOfWork(fiber: FiberNode) {
   // beginWork 递的过程
-  const next = beginWork(fiber);
+  const next = beginWork(fiber,wipRootRenderLane);
   // 递的过程结束，保存pendingProps
   fiber.memorizedProps = fiber.pendingProps;
   // 这里不能直接给workInProgress赋值，如果提前赋workInProgress为null 会导致递归提前结束
@@ -235,7 +235,6 @@ function workLoop() {
 
 /** 在并发模式下，如果shouldYieldToHost 则让出主线程 暂停render过程 */
 function workConcurrentLoop() {
-  console.log('scheduler.shouldYieldToHost()',scheduler.getCurrentPriorityLevel(),scheduler.shouldYieldToHost())
   while (workInProgress && !scheduler.shouldYieldToHost()) {
     performUnitOfWork(workInProgress);
   }

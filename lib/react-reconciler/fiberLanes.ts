@@ -105,7 +105,7 @@ export function getHighestPriorityLane(lanes: Lanes): Lane {
  * @param subSet
  */
 export function isSubsetOfLanes(laneSet: Lanes, subSet: Lanes | Lane) {
-  return (laneSet && subSet) === subSet;
+  return (laneSet & subSet) === subSet;
 }
 
 /**

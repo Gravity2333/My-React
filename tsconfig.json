@@ -2,8 +2,4 @@
 	"compilerOptions": {
 		"jsx": "react"
 	}
-
-	"compilerOptions": {
-		"jsx": "react"
-	}
 }

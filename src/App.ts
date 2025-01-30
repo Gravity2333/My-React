@@ -245,7 +245,6 @@ export default function App() {
       },
       '大量数据 测试useTransition'
     ),
-    String(isPending),
-    content,
+    isPending?'Loading Data...':content,
   ])
 }
