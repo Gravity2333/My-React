@@ -235,6 +235,7 @@ function workLoop() {
 
 /** 在并发模式下，如果shouldYieldToHost 则让出主线程 暂停render过程 */
 function workConcurrentLoop() {
+  console.log('scheduler.shouldYieldToHost()',scheduler.getCurrentPriorityLevel(),scheduler.shouldYieldToHost())
   while (workInProgress && !scheduler.shouldYieldToHost()) {
     performUnitOfWork(workInProgress);
   }
@@ -286,7 +287,6 @@ export function renderRoot(
 /** commit阶段 */
 export function commitRoot(root: FiberRootNode) {
   const finishedWork = root.finishedWork;
-
 
   if (finishedWork === null) return;
 

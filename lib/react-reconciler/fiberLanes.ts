@@ -2,7 +2,7 @@
 
 import scheduler, { PriorityLevel } from "../scheduler";
 import { FiberRootNode } from "./fiber";
-
+import { isTransition } from './fiberHooks'
 /** 单车道 */
 export type Lane = number;
 /** 多车道 （优先级合集） */
@@ -176,6 +176,8 @@ export function lanesToSchedulerPriority(lanes: Lanes): PriorityLevel {
       return PriorityLevel.IMMEDIATE_PRIORITY;
     case InputContinuousLane:
       return PriorityLevel.USER_BLOCKING_PRIORITY;
+    case TransitionLane:
+      return PriorityLevel.LOW_PRIORITY;
     default:
       return PriorityLevel.NORMAL_PRIORITY;
   }
@@ -186,6 +188,9 @@ export function lanesToSchedulerPriority(lanes: Lanes): PriorityLevel {
  * 比如 setState在effect中触发和在onclick中触发 有不一样的优先级
  */
 export function requestUpdateLane(): Lane {
+  if (isTransition) {
+    return TransitionLane
+  }
   const currentUpdateLane = schedulerPriorityToLane(
     scheduler.getCurrentPriorityLevel()
   );

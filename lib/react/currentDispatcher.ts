@@ -4,6 +4,7 @@ import { EffectCallback, HookDeps } from "../react-reconciler/fiberHooks";
 export interface Dispatcher {
   useState: <T>(initialState: T | (() => T)) => [T, Dispatch<T>];
   useEffect: (create: EffectCallback, deps: HookDeps) => EffectCallback | void;
+  useTransition: () => [boolean, (callback: () => void) => void]
 }
 
 /** 共享的 当前的Dispatcher */

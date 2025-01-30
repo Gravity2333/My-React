@@ -45,6 +45,9 @@ let workInProgressHook: Hook | null = null;
 let currentHook: Hook | null = null;
 // 需要注意 wipxxx都是当前处理fiber tree上的 current都是当前已经渲染的fiber tre上的属性
 
+// 导出共享变量
+export let isTransition = false
+
 /** 运行函数组件以及hooks */
 export function renderWithHooks(wip: FiberNode) {
   // 主要作用是，运行函数组件 并且在函数运行上下文挂载currentDispatcher 在运行之后 卸载Dispatcher
@@ -66,12 +69,14 @@ export function renderWithHooks(wip: FiberNode) {
     currentDispatcher.current = {
       useState: updateState,
       useEffect: updateEffect,
+      useTransition: updateTransition,
     };
   } else {
     // mount
     currentDispatcher.current = {
       useState: mountState,
       useEffect: mountEffect,
+      useTransition: mountTransition,
     };
   }
 
@@ -203,7 +208,7 @@ function dispatchSetState<State>(
   // 入队 并且加入到fiber上
   updateQueue.enqueue(update, fiber, lane);
   // 开启调度时，也需要传入当前优先级
-  scheduleUpdateOnFiber(fiber,lane);
+  scheduleUpdateOnFiber(fiber, lane);
 }
 
 /** 挂载Effect */
@@ -312,4 +317,41 @@ function shallowEqual(prevDeps: HookDeps, curDeps: HookDeps) {
     return false;
   }
   return true;
+}
+
+/** transition */
+function mountTransition() {
+  // 设置pending state
+  const [isPending, setPending] = mountState<boolean>(false)
+  // 获得hook
+  const hook = mountWorkInProgressHook()
+  // 创建startTransition
+  const start = startTransition.bind(null, setPending)
+  // 记录start
+  hook.memorizedState = start
+  // 返回pending和start
+  return [isPending, start] as [boolean, (callback: () => void) => void]
+}
+
+function updateTransition() {
+  const [isPending] = updateState<boolean>()
+  const hook = updateWorkInProgressHook()
+  const start = hook.memorizedState
+  return [isPending, start] as [boolean, (callback: () => void) => void]
+}
+
+function startTransition(setPending: Dispatch<boolean>, callback: () => void) {
+  // 开始transition 第一次更新 此时优先级高
+  setPending(true)
+  // transition过程，下面的优先级低
+  const prevTransition = isTransition
+  // 设置标记 表示处于transition过程中，在fiberHook.ts/requestUpdateLane会判断这个变量，如果true则返回transtionLane
+  isTransition = true
+  // 设置标记 （在react原版中 这里是 1）
+  // 第二次更新 优先级低
+  callback()
+  // 第三次更新 重新设置pending 优先级低
+  setPending(false)
+  // 恢复isTransition
+  isTransition = prevTransition
 }
