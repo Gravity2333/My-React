@@ -10,19 +10,20 @@ import {
 } from "./workTag";
 import { renderWithHooks } from "./fiberHooks";
 import { Lane } from "./fiberLanes";
+import { Ref } from "./flags";
 
 /** 递的过程 */
-export function beginWork(wip: FiberNode,renderLane: Lane): FiberNode | null {
+export function beginWork(wip: FiberNode, renderLane: Lane): FiberNode | null {
   // 比较，当前的fiber 和 旧的fiber
   switch (wip.tag) {
     case HostRoot:
-      return updateHostRoot(wip,renderLane);
+      return updateHostRoot(wip, renderLane);
     case HostComponent:
       return updateHostComponent(wip);
     case HostText:
       return null;
     case FunctionComponent:
-      return updateFunctionComponent(wip,renderLane);
+      return updateFunctionComponent(wip, renderLane);
     case Fragment:
       return updateFragment(wip);
     default:
@@ -54,7 +55,7 @@ function reconcileChildren(wip: FiberNode, children: ReactElementChildren) {
 }
 
 /** 处理HostRoot节点的比较 */
-function updateHostRoot(wip: FiberNode,renderLane: Lane): FiberNode {
+function updateHostRoot(wip: FiberNode, renderLane: Lane): FiberNode {
   /** 对于HostRoot节点 其memorizedState存储的是其children Element 因为其在dom/jsx中没有对应的节点，所以不存在props.children
    * 将其children放在memorizedState
    */
@@ -79,6 +80,8 @@ function updateHostRoot(wip: FiberNode,renderLane: Lane): FiberNode {
 function updateHostComponent(wip: FiberNode): FiberNode {
   /** 1.获取element.children */
   const hostChildren = wip.pendingProps?.children;
+  // 目前只有在HostComponent中标记Ref
+  markRef(wip);
   /** 2. 协调子元素 */
   reconcileChildren(wip, hostChildren);
   /** 3.返回第一个child */
@@ -86,8 +89,8 @@ function updateHostComponent(wip: FiberNode): FiberNode {
 }
 
 /** 处理函数节点的比较 */
-function updateFunctionComponent(wip: FiberNode,renderLane: Lane): FiberNode {
-  const nextChildElement = renderWithHooks(wip,renderLane);
+function updateFunctionComponent(wip: FiberNode, renderLane: Lane): FiberNode {
+  const nextChildElement = renderWithHooks(wip, renderLane);
   reconcileChildren(wip, nextChildElement);
   return wip.child;
 }
@@ -98,4 +101,22 @@ function updateFragment(wip: FiberNode): FiberNode {
   const nextChildElement = wip.pendingProps as ReactElementChildren;
   reconcileChildren(wip, nextChildElement);
   return wip.child;
+}
+
+/** 标记Ref [生产Ref] */
+function markRef(wip: FiberNode) {
+  const current = wip.alternate;
+  const ref = wip.ref;
+
+  if (current === null && ref !== null) {
+    // mount阶段 如果wip有ref则绑定flag
+    wip.flags |= Ref;
+    return;
+  }
+
+  if (current !== null && ref !== current.ref) {
+    // update阶段 wip.ref和current.ref不相等 （useImmpreciatHandle改变ref）需要重新挂载ref
+    wip.flags |= Ref;
+    return;
+  }
 }

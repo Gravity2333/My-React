@@ -2,11 +2,13 @@ import { Container, FiberNode, FiberRootNode } from "./fiber";
 import {
   ChildDeletion,
   Flags,
+  LayoutMask,
   MutationMask,
   NoFlags,
   PassiveEffect,
   PassiveMask,
   Placement,
+  Ref,
   Update,
 } from "./flags";
 import { updateFiberProps } from "../events/SyntheticEvent";
@@ -87,6 +89,29 @@ const commitMutationEffectsOnFiber: CommitCallback = (finishedWork, root) => {
     // 存在被动副作用
     commitPassiveEffect(finishedWork, root, "update");
   }
+
+  // 卸载Ref 只有hostComponent需要卸载
+  if (finishedWork.tag === HostComponent && (flags & Ref) !== NoFlags) {
+    const current = finishedWork.alternate;
+    if (current) {
+      // 需要卸载current的ref 其实本质上current和finishedWork的ref都是一个
+      saftyDetachRef(current);
+    }
+
+    // 卸载之后由于可能还会加载ref 所以这里的flag不能~Ref
+  }
+};
+
+/** 用来处理 Layout副作用 [Ref] */
+const commitLayoutEffectsOnFiber: CommitCallback = (finishedWork) => {
+  // 处理每个节点的Effect
+  // 获取节点的flags
+  const flags = finishedWork.flags;
+
+  if (finishedWork.tag === HostComponent && (flags & Ref) !== NoFlags) {
+    saftyAttachRef(finishedWork);
+    finishedWork.flags &= ~Ref;
+  }
 };
 
 /** 收集被动副作用，这个函数可能会在
@@ -136,10 +161,17 @@ function commitUpdate(fiber: FiberNode) {
 /** 删除节点 */
 function commitDeletion(fiber: FiberNode, root: FiberRootNode) {
   const parent = getHostParent(fiber);
-  if ((fiber.tag === HostComponent || fiber.tag === HostText) && fiber.stateNode) {
-    parent.removeChild(fiber.stateNode)
+  if (
+    (fiber.tag === HostComponent || fiber.tag === HostText) &&
+    fiber.stateNode
+  ) {
+    parent.removeChild(fiber.stateNode);
+    if (fiber.tag === HostComponent) {
+      // HostComponent删除的时候 需要卸载Ref
+      saftyDetachRef(fiber);
+    }
   } else {
-    const childToDelete: FiberNode[] = []
+    const childToDelete: FiberNode[] = [];
 
     const findFn = () => {
       while (hostChild !== null) {
@@ -147,8 +179,13 @@ function commitDeletion(fiber: FiberNode, root: FiberRootNode) {
           hostChild.stateNode &&
           (hostChild.tag === HostComponent || hostChild.tag === HostText)
         ) {
-          childToDelete.push(hostChild)
-          return
+          childToDelete.push(hostChild);
+   
+          if (hostChild.tag === HostComponent) {
+            // HostComponent删除的时候 需要卸载Ref
+            saftyDetachRef(hostChild);
+          }
+          return;
         } else if (hostChild.tag === FunctionComponent) {
           commitPassiveEffect(hostChild, root, "unmount");
         }
@@ -159,26 +196,26 @@ function commitDeletion(fiber: FiberNode, root: FiberRootNode) {
           break;
         }
       }
-    }
+    };
 
     // fiber不是host 递归查找
     let hostChild = fiber.child;
     findChild: while (hostChild !== null) {
-      findFn()
+      findFn();
       // 归
       while (hostChild.sibling === null) {
-        if (hostChild.return === null || hostChild.return === fiber) break findChild;
+        if (hostChild.return === null || hostChild.return === fiber)
+          break findChild;
         hostChild = hostChild.return;
       }
       hostChild = hostChild.sibling;
     }
 
-
-    childToDelete.forEach(child => {
-      if(parent.contains(child.stateNode)){
+    childToDelete.forEach((child) => {
+      if (parent.contains(child.stateNode)) {
         parent.removeChild(child.stateNode);
       }
-    })
+    });
   }
   // 断开链接
   const current = fiber.alternate;
@@ -371,3 +408,43 @@ export const commitMutationEffects = commitEffect(
   MutationMask | PassiveMask,
   commitMutationEffectsOnFiber
 );
+
+export const commitLayoutEffects = commitEffect(
+  "layout",
+  LayoutMask,
+  commitLayoutEffectsOnFiber
+);
+
+/** 卸载Ref
+ *  卸载时机 commit的mutation阶段 包括
+ *  1. 组件卸载
+ *  2. 组件更新时包含Ref （Ref变动）
+ */
+function saftyDetachRef(current: FiberNode) {
+  // 这里传入的是current的fiber 也就是旧的fiber 卸载的也是旧的fiber
+  // fiber会在createWorkinprogress复用传递 这里的作用就是 ref.current = null / ref(null)
+  const ref = current.ref;
+  if (ref === null) return;
+  // ref可以是函数或者对象 判读类型
+  if (typeof ref === "function") {
+    // 卸载/更新变动之前卸载时 都会执行下ref函数 并且传入null
+    ref(null);
+  } else {
+    ref.current = null;
+  }
+}
+
+/** 附加Ref 附加时机
+ *  commit的layout阶段 也就是真实dom更新完成 渲染之前
+ */
+function saftyAttachRef(finishedWork: FiberNode) {
+  const ref = finishedWork.ref;
+  const dom = finishedWork.stateNode;
+  if (ref !== null) {
+    if (typeof ref === "function") {
+      ref(dom);
+    } else {
+      ref.current = dom;
+    }
+  }
+}

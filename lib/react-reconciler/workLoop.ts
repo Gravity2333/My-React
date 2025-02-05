@@ -3,6 +3,7 @@ import {
   commitHookEffectListCreate,
   commitHookEffectListDestory,
   commitHookEffectListUnmount,
+  commitLayoutEffects,
   commitMutationEffects,
 } from "./commitWork";
 import { completeWork } from "./completeWork";
@@ -210,7 +211,7 @@ function completeUnitOfWork(fiber: FiberNode) {
  */
 function performUnitOfWork(fiber: FiberNode) {
   // beginWork 递的过程
-  const next = beginWork(fiber,wipRootRenderLane);
+  const next = beginWork(fiber, wipRootRenderLane);
   // 递的过程结束，保存pendingProps
   fiber.memorizedProps = fiber.pendingProps;
   // 这里不能直接给workInProgress赋值，如果提前赋workInProgress为null 会导致递归提前结束
@@ -289,9 +290,9 @@ export function commitRoot(root: FiberRootNode) {
 
   if (finishedWork === null) return;
 
-  const lane = root.finishedLane
+  const lane = root.finishedLane;
   root.finishedWork = null;
-  root.finishedLane  = NoLane
+  root.finishedLane = NoLane;
 
   // 从root.pendingLanes去掉当前的lane
   markRootFinished(root, lane);
@@ -318,7 +319,10 @@ export function commitRoot(root: FiberRootNode) {
   }
   // commit完成 修改current指向新的树
   root.current = finishedWork;
-  // ensureRootIsScheduled(root);
+  // commitLayout阶段 处理Attach Ref
+  commitLayoutEffects(finishedWork, root);
+  // 确保可以继续调度
+  ensureRootIsScheduled(root);
 }
 
 // 处理被动Effect

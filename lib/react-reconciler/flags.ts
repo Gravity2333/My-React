@@ -1,5 +1,5 @@
 export type Flags = number;
-
+export type EffectTag = number;
 export const NoFlags = 0b0000000;
 export const Placement = 0b0000001;
 export const Update = 0b0000010;
@@ -16,8 +16,10 @@ export const DidCapture = 0b1000000;
 // unwind应该捕获、还未捕获到
 export const ShouldCapture = 0b1000000000000;
 
+// mutation阶段的mask 需要包含ref
 export const MutationMask =
 	Placement | Update | ChildDeletion | Ref | Visibility;
+// layout阶段的mask
 export const LayoutMask = Ref;
 
 export const PassiveMask = PassiveEffect | ChildDeletion;

@@ -5,6 +5,7 @@ import {
   ReactElementChildren,
   ReactElementProps,
   ReactElementType,
+  Ref,
 } from "../react";
 import { REACT_FRAGMENT_TYPE } from "./ReactSymbols";
 import { UpdateQueue } from "./updateQueue";
@@ -31,6 +32,8 @@ export class FiberNode {
   tag: WorkTag;
   /** element对应的Type */
   type: ReactElementType;
+  /** ref */
+  ref: Ref
 
   // 对应的dom节点 可能为null
   stateNode: any;
@@ -68,6 +71,7 @@ export class FiberNode {
     this.key = key || null;
     this.tag = tag;
     this.type = null;
+    this.ref = null;
 
     this.stateNode = null;
     this.memorizedState = null;
@@ -166,6 +170,8 @@ export function createWorkInProgress(
   wip.key = currentFiber.key;
   wip.tag = currentFiber.tag;
   wip.type = currentFiber.type;
+  // ref需要传递
+  wip.ref = currentFiber.ref;
   wip.memorizedState = currentFiber.memorizedState;
   wip.memorizedProps = currentFiber.memorizedProps;
   wip.updateQueue = currentFiber.updateQueue;
@@ -201,6 +207,8 @@ export function creareFiberFromElement(element: ReactElement): FiberNode {
 
   const fiber = new FiberNode(fiberTag, pendingProps, element.key);
   fiber.type = element.type;
+  // 这里需要设置ref 新创建的fiber节点 非复用的情况下 需要从element.ref获取ref
+  fiber.ref = element.ref
   return fiber;
 }
 
