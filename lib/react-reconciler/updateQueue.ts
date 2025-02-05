@@ -15,11 +15,11 @@ export type Dispatch<State> = (action: Action<State>) => void;
 export class Update<State> {
   next: Update<State>;
   action: Action<State>;
-  lane: Lane;// 当前更新的优先级Lane
+  lane: Lane; // 当前更新的优先级Lane
   constructor(action: Action<State>, lane: Lane) {
     this.action = action;
     this.next = null;
-    this.lane = lane
+    this.lane = lane;
   }
 }
 
@@ -31,9 +31,9 @@ export class UpdateQueue<State> {
   /** 派发函数 */
   dispatch: Dispatch<State>;
   /** 基础队列 */
-  baseQueue: Update<State> | null
+  baseQueue: Update<State> | null;
   /** 基础state */
-  baseState: State
+  baseState: State;
 
   constructor() {
     /** 初始化 */
@@ -42,8 +42,8 @@ export class UpdateQueue<State> {
     };
 
     this.dispatch = null;
-    this.baseQueue = null
-    this.baseState = null
+    this.baseQueue = null;
+    this.baseState = null;
   }
 
   /** 入队，构造环状链表 */
@@ -57,72 +57,81 @@ export class UpdateQueue<State> {
       // 插入第二个元素
       update.next = this.shared.pending.next;
       this.shared.pending.next = update;
-      this.shared.pending = update
+      this.shared.pending = update;
     }
     /** 在当前的fiber上设置lane */
     fiber.lanes = mergeLane(fiber.lanes, lane);
+    /** 在current上也设置lane 因为在beginwork阶段 wip.lane = NoLane 如果bailout 需要从current恢复 */
+    const current = fiber.alternate;
+    if (current) {
+      current.lanes = mergeLane(current.lanes, lane);
+    }
   }
 
   /** 处理任务 */
-  process(renderLane: Lane, clean: boolean = false) {
-    let cacheState = this.shared.pending
+  process(
+    renderLane: Lane,
+    clean: boolean = false,
+    onSkipUpdate?: (update: Update<any>) => void
+  ) {
+    let cacheState = this.shared.pending;
 
     /** 获取baseQueue pending 完成拼接 */
-    let baseState = this.baseState
-    let baseQueue = this.baseQueue
-    const currentPending = this.shared.pending
+    let baseState = this.baseState;
+    let baseQueue = this.baseQueue;
+    const currentPending = this.shared.pending;
 
     // 生成新的baseQueue过程
     if (currentPending !== null) {
       if (baseQueue !== null) {
         // 拼接两个队列
         // pending -> p1 -> p2 -> p3
-        const pendingFirst = currentPending.next // p1
+        const pendingFirst = currentPending.next; // p1
         // baseQueue -> b1->b2->b3
-        const baseFirst = baseQueue.next // b1
+        const baseFirst = baseQueue.next; // b1
         // 拼接
-        currentPending.next = baseFirst // p1 -> p2 -> p3 -> pending -> b1 -> b2 -> b3
-        baseQueue.next = pendingFirst //b1-> b2 -> b3 -> baseQueue -> p1 -> p2 -> p3
+        currentPending.next = baseFirst; // p1 -> p2 -> p3 -> pending -> b1 -> b2 -> b3
+        baseQueue.next = pendingFirst; //b1-> b2 -> b3 -> baseQueue -> p1 -> p2 -> p3
         // p1 -> p2 -> p3 -> pending -> b1 -> b2 -> b3 baseQueue
       }
       // 合并 此时 baseQueue -> b1 -> b2 -> b3 -> p1 -> p2 -> p3
-      baseQueue = currentPending
+      baseQueue = currentPending;
 
       // 覆盖新的baseQueue
-      this.baseQueue = baseQueue
+      this.baseQueue = baseQueue;
 
       // pending可以置空了
-      this.shared.pending = null
+      this.shared.pending = null;
 
       if (!clean) {
-        this.shared.pending = cacheState
+        this.shared.pending = cacheState;
       }
     }
 
     // 消费baseQueue过程
     // 设置新的basestate和basequeue
-    let newBaseState: State = baseState
-    let newBaseQueueFirst: Update<State> | null = null
-    let newBaseQueueLast: Update<State> | null = null
+    let newBaseState: State = baseState;
+    let newBaseQueueFirst: Update<State> | null = null;
+    let newBaseQueueLast: Update<State> | null = null;
     // 新的计算值
-    let memorizedState: State = baseState
+    let memorizedState: State = baseState;
 
     // 当前遍历到的update
-    let currentUpdate = this.baseQueue?.next
+    let currentUpdate = this.baseQueue?.next;
     if (currentUpdate) {
       do {
-        const currentUpdateLane = currentUpdate.lane
+        const currentUpdateLane = currentUpdate.lane;
         // 看是否有权限
         if (isSubsetOfLanes(renderLane, currentUpdateLane)) {
           // 有权限
           if (newBaseQueueFirst !== null) {
             // 已经存在newBaseFirst 则往后加此次的update 并且将此次update的lane设置为NoLane 保证下次一定能运行
-            const clone = new Update(currentUpdate.action, NoLane)
-            newBaseQueueLast = newBaseQueueLast.next = clone
+            const clone = new Update(currentUpdate.action, NoLane);
+            newBaseQueueLast = newBaseQueueLast.next = clone;
           }
 
           // 不论存不存在newBaseFirst 都要计算memorizedState
-          const currentAction = currentUpdate.action
+          const currentAction = currentUpdate.action;
           if (currentAction instanceof Function) {
             /** Action是函数类型 运行返回newState */
             memorizedState = currentAction(memorizedState);
@@ -132,33 +141,36 @@ export class UpdateQueue<State> {
           }
         } else {
           // 无权限
-          const clone = new Update(currentUpdate.action, currentUpdate.lane)
+          const clone = new Update(currentUpdate.action, currentUpdate.lane);
+          if (onSkipUpdate) {
+            onSkipUpdate(clone);
+          }
           // 如果newBaseQueueFirst === null 则从第一个开始添加newbaseQueue队列
           if (newBaseQueueFirst === null) {
-            newBaseQueueFirst = newBaseQueueLast = clone
+            newBaseQueueFirst = newBaseQueueLast = clone;
             // newBaseState到此 不在往后更新 下次从此开始
-            newBaseState = memorizedState
+            newBaseState = memorizedState;
           } else {
-            newBaseQueueLast = newBaseQueueLast.next = clone
+            newBaseQueueLast = newBaseQueueLast.next = clone;
           }
         }
 
-        currentUpdate = currentUpdate.next
-      } while (currentUpdate !== this.baseQueue?.next)
+        currentUpdate = currentUpdate.next;
+      } while (currentUpdate !== this.baseQueue?.next);
     }
 
     if (newBaseQueueFirst === null) {
       // 此次没有update被跳过，更新newBaseState
-      newBaseState = memorizedState
+      newBaseState = memorizedState;
     } else {
       // newbaseState不变 newBaseQueueFirst newBaseQueueLast 成环
-      newBaseQueueLast.next = newBaseQueueFirst
+      newBaseQueueLast.next = newBaseQueueFirst;
     }
 
     // 保存baseState和BaseQueue
-    this.baseQueue = newBaseQueueLast
-    this.baseState = newBaseState
-    return { memorizedState }
+    this.baseQueue = newBaseQueueLast;
+    this.baseState = newBaseState;
+    return { memorizedState };
   }
 }
 

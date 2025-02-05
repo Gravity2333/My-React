@@ -354,3 +354,25 @@ export function mountChildFiber(
 ) {
   return childReconciler(false)(wip, null, children);
 }
+
+export function cloneChildFibers(wip: FiberNode) {
+  // 此时wip的child还是alternate的child （可能没有alternate）
+  if (wip.child === null) {
+    return;
+  }
+
+  let currentChild = wip.child;
+  let newChild = createWorkInProgress(currentChild, currentChild.pendingProps);
+  newChild.return = wip;
+  wip.child = newChild;
+
+  while (currentChild.sibling !== null) {
+    currentChild = currentChild.sibling;
+    // 找子节点
+    newChild = newChild.sibling = createWorkInProgress(
+      currentChild,
+      currentChild.pendingProps
+    );
+    newChild.return = wip;
+  }
+}

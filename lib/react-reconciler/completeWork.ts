@@ -8,6 +8,7 @@ import {
   HostRoot,
   HostText,
 } from "./workTag";
+import { NoLane } from "./fiberLanes";
 
 /** 归的过程 主要逻辑有
  * 1. 不能复用的DOM创建 赋给stateNode
@@ -109,16 +110,21 @@ function appendAllChildren(instance: Element, wip: FiberNode) {
  */
 function bubbleProperties(wip: FiberNode) {
   let subtreeFlags = NoFlags;
-  // TODO childLanes
+  let childLanes = NoLane;
   let node = wip.child || null;
   while (node !== null) {
     // merge subtreeFlags
     subtreeFlags |= node.subTreeFlags;
     subtreeFlags |= node.flags;
+    // merge childLanes
+    childLanes |= node.lanes;
+    childLanes |= node.childLanes;
 
+    // 寻找下一个子节点
     node.return = wip; // 冗余操作
     node = node.sibling; // 找下一个node
   }
 
   wip.subTreeFlags = subtreeFlags;
+  wip.childLanes = childLanes;
 }

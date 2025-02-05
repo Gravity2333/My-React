@@ -1,4 +1,8 @@
-import { mountChildFiber, reconcileChildFiber } from "./childReconciler";
+import {
+  cloneChildFibers,
+  mountChildFiber,
+  reconcileChildFiber,
+} from "./childReconciler";
 import { FiberNode } from "./fiber";
 import { ReactElementChildren } from "../react";
 import {
@@ -9,11 +13,63 @@ import {
   HostText,
 } from "./workTag";
 import { renderWithHooks } from "./fiberHooks";
-import { Lane } from "./fiberLanes";
+import { includeSomeLanes, Lane, NoLane } from "./fiberLanes";
 import { Ref } from "./flags";
+
+/** 是否收到更新 默认为false 即没有更新 开启bailout */
+let didReceiveUpdate: boolean = false;
+
+/** 标记当前wip存在更新 不能bailout
+ * 导出接口 方便其他模块 （hooks） 使用 */
+export function markWipReceiveUpdate() {
+  didReceiveUpdate = true;
+}
 
 /** 递的过程 */
 export function beginWork(wip: FiberNode, renderLane: Lane): FiberNode | null {
+  /** bailout策略
+   *  四要素
+   *  1. props相等
+   *  2. state相等 （无update -> update结果不变）
+   *  3. type相等
+   *  4. context相等 TODO
+   */
+  // 重置didReceiveUpdate
+  didReceiveUpdate = false;
+
+  // 获取current
+  const current = wip.alternate;
+
+  if (current !== null) {
+    /** 更新模式下 才检查是否bailout */
+    /** 检查props和type */
+    const prevProps = current.memorizedProps;
+    const wipProps = wip.pendingProps;
+    /**
+     * 注意 bailout的props直接检查对象地址是否相等
+     * 如果父节点存在更新 那么子节点无法bailout 需要通过childReconcile创建
+     * 那么子节点的 props一定和current.props不一样 因为createElement中传入的对象也不是相同地址 比如
+     * current createElement('div',{a:100}) -父节点不同，导致reconcilechild-> createElement('div',{a:100})
+     * 注意 虽然都是{a:100} 但是两个对象来源于两次render 其对象地址不同，这也就导致如果父节点没能bailout 子节点也无法bailout 就必须使用memo来shallowEqual
+     */
+    if (prevProps !== wipProps || current.type !== wip.type) {
+      // 检查不通过
+      didReceiveUpdate = true;
+    } else {
+      // 如果props和type都检查通过 检查state和context TODO
+      if (!checkUpdate(wip, renderLane)) {
+        // 进入bailout
+        didReceiveUpdate = false;
+        return bailoutOnAlreadyFinishedWork(wip, renderLane);
+      }
+    }
+  }
+
+  /** 给wip.lanes 置空
+   *  当存在跳过的update时，processQueue的onSkipUpdate回调会返回跳过的lane 再次加上即可
+   */
+  wip.lanes = NoLane;
+
   // 比较，当前的fiber 和 旧的fiber
   switch (wip.tag) {
     case HostRoot:
@@ -31,6 +87,33 @@ export function beginWork(wip: FiberNode, renderLane: Lane): FiberNode | null {
       break;
   }
   return null;
+}
+
+/** 检查是否存在更新 即检查wip.lanes 是否包含当前renderLane */
+function checkUpdate(wip: FiberNode, renderLane: Lane) {
+  // 注意 这里不要用wip.lanes直接检查，因为checkUpdate 也会在 wip.lanes = NoLane 之后调用，比如Memo中
+  // 此时wip.lanes可能为NoLane 所以需要使用在enqueueUpdate中同步的 current.lanes
+  const current = wip.alternate;
+  if (current !== null && includeSomeLanes(current.lanes, renderLane)) {
+    return true;
+  }
+
+  return false;
+}
+
+/** 进一步bailout
+ *  1. 如果childLanes也不包含renderLane 表示已经没有更新了 直接返回null 进入completework阶段
+ *  2. 如果childLanes还包含renderLane 表示还有更新 但是此wip节点可以直接复用子节点
+ */
+function bailoutOnAlreadyFinishedWork(wip: FiberNode, renderLane: Lane) {
+  /** 判断childLanes */
+  if (!includeSomeLanes(wip.childLanes, renderLane)) {
+    return null;
+  }
+
+  /** clone节点 */
+  cloneChildFibers(wip);
+  return wip.child;
 }
 
 /**

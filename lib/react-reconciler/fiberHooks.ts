@@ -1,6 +1,6 @@
 import { currentDispatcher } from "../react/currentDispatcher";
 import { FiberNode } from "./fiber";
-import { Lane, NoLane, requestUpdateLane } from "./fiberLanes";
+import { Lane, mergeLane, NoLane, requestUpdateLane } from "./fiberLanes";
 import { Flags, PassiveEffect } from "./flags";
 import { HookHasEffect, Passive } from "./hookEffectTags";
 import {
@@ -124,7 +124,16 @@ function mountState<T>(initialState): [T, Dispatch<T>] {
 function updateState<T>(): [T, Dispatch<T>] {
   const hook = updateWorkInProgressHook();
 
-  const { memorizedState } = hook.updateQueue.process(renderLane, true);
+  const { memorizedState } = hook.updateQueue.process(
+    renderLane,
+    true,
+    (update) => {
+      currentRenderingFiber.lanes = mergeLane(
+        currentRenderingFiber.lanes,
+        update.lane
+      );
+    }
+  );
   hook.memorizedState = memorizedState;
   return [memorizedState, hook.updateQueue.dispatch];
 }
