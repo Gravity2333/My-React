@@ -67,3 +67,8 @@ export function useEffect(create: EffectCallback, deps: HookDeps) {
   const dispatcher = resolveDispatcher();
   return dispatcher.useEffect(create, deps);
 }
+
+export function useTransition() {
+  const dispatcher = resolveDispatcher()
+  return dispatcher.useTransition()
+}

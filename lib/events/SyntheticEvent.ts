@@ -1,6 +1,7 @@
 import { Container } from "../react-reconciler/fiber";
 import { ReactElementProps } from "../react";
 import { nativeEvents, reactEvents, reactEventSet } from "./events";
+import scheduler, { PriorityLevel } from "../scheduler";
 
 /** 转换Style */
 function camelToKebab(str) {
@@ -124,11 +125,11 @@ function collectEvents(
     // 从target收集到source
     const nodeProps = getFiberProps(currentNode);
     if (nodeProps[reactEvent[1]]) {
-       // 冒泡事件
+      // 冒泡事件
       events.bubbleCallbacks.push(nodeProps[reactEvent[1]]);
     }
     if (nodeProps[reactEvent[0]]) {
-     // 捕获事件
+      // 捕获事件
       events.captureCallbacks.unshift(nodeProps[reactEvent[0]]);
     }
     currentNode = currentNode.parentNode as Element;
@@ -142,7 +143,11 @@ function triggerEventListeners(
   listeners: SyntheticEventListener[],
   event: Event
 ) {
-  listeners.forEach((listener) => listener(event));
+  listeners.forEach((listener) =>
+    scheduler.runWithPriority(PriorityLevel.IMMEDIATE_PRIORITY, () => {
+      listener(event)
+    })
+  )
 }
 
 /**

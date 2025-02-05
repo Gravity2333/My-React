@@ -9,19 +9,20 @@ import {
   HostText,
 } from "./workTag";
 import { renderWithHooks } from "./fiberHooks";
+import { Lane } from "./fiberLanes";
 
 /** 递的过程 */
-export function beginWork(wip: FiberNode): FiberNode | null {
+export function beginWork(wip: FiberNode,renderLane: Lane): FiberNode | null {
   // 比较，当前的fiber 和 旧的fiber
   switch (wip.tag) {
     case HostRoot:
-      return updateHostRoot(wip);
+      return updateHostRoot(wip,renderLane);
     case HostComponent:
       return updateHostComponent(wip);
     case HostText:
       return null;
     case FunctionComponent:
-      return updateFunctionComponent(wip);
+      return updateFunctionComponent(wip,renderLane);
     case Fragment:
       return updateFragment(wip);
     default:
@@ -53,7 +54,7 @@ function reconcileChildren(wip: FiberNode, children: ReactElementChildren) {
 }
 
 /** 处理HostRoot节点的比较 */
-function updateHostRoot(wip: FiberNode): FiberNode {
+function updateHostRoot(wip: FiberNode,renderLane: Lane): FiberNode {
   /** 对于HostRoot节点 其memorizedState存储的是其children Element 因为其在dom/jsx中没有对应的节点，所以不存在props.children
    * 将其children放在memorizedState
    */
@@ -61,7 +62,7 @@ function updateHostRoot(wip: FiberNode): FiberNode {
   /** 获取updateQueue */
   const updateQueue = wip.updateQueue;
   /** 这里hostRoot的update由updateContainer放入，其对应的action就是其element */
-  const { memorizedState: newChildren } = updateQueue.process(preChildren);
+  const { memorizedState: newChildren } = updateQueue.process(renderLane);
 
   if (newChildren === preChildren) {
     // bail out 由于hostroot不存在状态的问题 可以直接bailout TODO
@@ -85,8 +86,8 @@ function updateHostComponent(wip: FiberNode): FiberNode {
 }
 
 /** 处理函数节点的比较 */
-function updateFunctionComponent(wip: FiberNode): FiberNode {
-  const nextChildElement = renderWithHooks(wip);
+function updateFunctionComponent(wip: FiberNode,renderLane: Lane): FiberNode {
+  const nextChildElement = renderWithHooks(wip,renderLane);
   reconcileChildren(wip, nextChildElement);
   return wip.child;
 }

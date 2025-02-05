@@ -136,39 +136,50 @@ function commitUpdate(fiber: FiberNode) {
 /** 删除节点 */
 function commitDeletion(fiber: FiberNode, root: FiberRootNode) {
   const parent = getHostParent(fiber);
-
-  if (
-    fiber.stateNode &&
-    (fiber.tag === HostComponent || fiber.tag === HostText)
-  ) {
-    parent.removeChild(fiber.stateNode);
-  } else if (fiber.tag === FunctionComponent) {
-    commitPassiveEffect(fiber, root, "unmount");
+  if ((fiber.tag === HostComponent || fiber.tag === HostText) && fiber.stateNode) {
+    parent.removeChild(fiber.stateNode)
   } else {
-    // fiber不是host 递归查找
-    let hostChild = fiber.child;
-    while (true) {
+    const childToDelete: FiberNode[] = []
+
+    const findFn = () => {
       while (hostChild !== null) {
-        if (hostChild.tag === HostComponent || hostChild.tag === HostText) {
-          parent.removeChild(hostChild.stateNode);
-          break;
+        if (
+          hostChild.stateNode &&
+          (hostChild.tag === HostComponent || hostChild.tag === HostText)
+        ) {
+          childToDelete.push(hostChild)
+          return
+        } else if (hostChild.tag === FunctionComponent) {
+          commitPassiveEffect(hostChild, root, "unmount");
         }
+
         if (hostChild.child !== null) {
           hostChild = hostChild.child;
         } else {
           break;
         }
       }
+    }
+
+    // fiber不是host 递归查找
+    let hostChild = fiber.child;
+    findChild: while (hostChild !== null) {
+      findFn()
       // 归
-      if (hostChild.sibling === null) {
-        if (hostChild.return === null || hostChild.return === fiber) return;
+      while (hostChild.sibling === null) {
+        if (hostChild.return === null || hostChild.return === fiber) break findChild;
         hostChild = hostChild.return;
       }
-      hostChild.sibling.return = hostChild;
       hostChild = hostChild.sibling;
     }
-  }
 
+
+    childToDelete.forEach(child => {
+      if(parent.contains(child.stateNode)){
+        parent.removeChild(child.stateNode);
+      }
+    })
+  }
   // 断开链接
   const current = fiber.alternate;
   if (current) {

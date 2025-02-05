@@ -210,7 +210,7 @@ function completeUnitOfWork(fiber: FiberNode) {
  */
 function performUnitOfWork(fiber: FiberNode) {
   // beginWork 递的过程
-  const next = beginWork(fiber);
+  const next = beginWork(fiber,wipRootRenderLane);
   // 递的过程结束，保存pendingProps
   fiber.memorizedProps = fiber.pendingProps;
   // 这里不能直接给workInProgress赋值，如果提前赋workInProgress为null 会导致递归提前结束
@@ -286,7 +286,6 @@ export function renderRoot(
 /** commit阶段 */
 export function commitRoot(root: FiberRootNode) {
   const finishedWork = root.finishedWork;
-
 
   if (finishedWork === null) return;
 
