@@ -133,6 +133,7 @@ export default function App() {
     createElement(
       "button",
       {
+        key:'counter-btn',
         onClick: () => {
           setType("counter");
         },
@@ -143,6 +144,7 @@ export default function App() {
     createElement(
       "button",
       {
+        key:'input-btn',
         onClick: () => {
           setType("input");
         },
@@ -153,6 +155,7 @@ export default function App() {
     createElement(
       "button",
       {
+        key:'hugedata-btn',
         onClick: () => {
           startTransition(() => {
             setType("hugeData");

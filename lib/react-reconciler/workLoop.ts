@@ -59,8 +59,11 @@ export function markUpdateLaneFromFiberToRoot(
   let parent = fiberNode.return; // parent表示父节点
   let node = fiberNode; // node标记当前节点
   while (parent !== null) {
-    // 从当前更新节点 把childLanes冒泡上去
-    parent.childLanes = mergeLane(parent.childLanes, lane);
+		parent.childLanes = mergeLane(parent.childLanes, lane);
+		const alternate = parent.alternate;
+		if (alternate !== null) {
+			alternate.childLanes = mergeLane(alternate.childLanes, lane);
+		}
     // 处理parent节点的childLanes
     node = parent;
     parent = parent.return;
