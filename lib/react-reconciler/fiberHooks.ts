@@ -1,6 +1,7 @@
 import { currentDispatcher } from "../react/currentDispatcher";
+import { markWipReceiveUpdate } from "./beginwork";
 import { FiberNode } from "./fiber";
-import { Lane, mergeLane, NoLane, requestUpdateLane } from "./fiberLanes";
+import { Lane, mergeLane, NoLane, removeLanes, requestUpdateLane } from "./fiberLanes";
 import { Flags, PassiveEffect } from "./flags";
 import { HookHasEffect, Passive } from "./hookEffectTags";
 import {
@@ -117,6 +118,8 @@ function mountState<T>(initialState): [T, Dispatch<T>] {
     hook.updateQueue
   );
   hook.updateQueue.baseState = memorizedState;
+  // 保存上一次的值
+  hook.updateQueue.lastRenderedState = memorizedState;
   return [memorizedState, hook.updateQueue.dispatch];
 }
 
@@ -134,7 +137,12 @@ function updateState<T>(): [T, Dispatch<T>] {
       );
     }
   );
+  // 检查state是否变化
+  if (hook.updateQueue.lastRenderedState !== memorizedState) {
+    markWipReceiveUpdate();
+  }
   hook.memorizedState = memorizedState;
+  hook.updateQueue.lastRenderedState = memorizedState;
   return [memorizedState, hook.updateQueue.dispatch];
 }
 
@@ -379,4 +387,15 @@ function mountRef<T>(initialValue: T): { current: T } {
 function updateRef<T>(): { current: T } {
   const hook = updateWorkInProgressHook();
   return hook.memorizedState;
+}
+
+/** 重置hook */
+export function bailoutHook(wip: FiberNode,renderLane: Lane){
+  const current = wip.alternate
+  if(current!==null){
+    wip.updateQueue = current.updateQueue // effectes
+    wip.flags &= ~PassiveEffect;
+    // 去掉current上的renderLane 因为此次renderLane没生效
+    current.lanes = removeLanes(current.lanes,renderLane)
+  }
 }

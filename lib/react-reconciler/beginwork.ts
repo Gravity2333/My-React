@@ -12,7 +12,7 @@ import {
   HostRoot,
   HostText,
 } from "./workTag";
-import { renderWithHooks } from "./fiberHooks";
+import { bailoutHook, renderWithHooks } from "./fiberHooks";
 import { includeSomeLanes, Lane, NoLane } from "./fiberLanes";
 import { Ref } from "./flags";
 
@@ -149,7 +149,8 @@ function updateHostRoot(wip: FiberNode, renderLane: Lane): FiberNode {
   const { memorizedState: newChildren } = updateQueue.process(renderLane);
 
   if (newChildren === preChildren) {
-    // bail out 由于hostroot不存在状态的问题 可以直接bailout TODO
+    // bailout
+    bailoutOnAlreadyFinishedWork(wip, renderLane);
   }
 
   /** 协调其子节点 */
@@ -173,7 +174,14 @@ function updateHostComponent(wip: FiberNode): FiberNode {
 
 /** 处理函数节点的比较 */
 function updateFunctionComponent(wip: FiberNode, renderLane: Lane): FiberNode {
+  // renderWithHooks 中检查，如果状态改变 则置didReceiveUpdate = true
   const nextChildElement = renderWithHooks(wip, renderLane);
+  if (wip.alternate !== null && !didReceiveUpdate) {
+    // bailout
+    // 重置hook
+    bailoutHook(wip, renderLane);
+    return bailoutOnAlreadyFinishedWork(wip, renderLane);
+  }
   reconcileChildren(wip, nextChildElement);
   return wip.child;
 }

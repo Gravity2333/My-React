@@ -1,10 +1,6 @@
-import {
-  createElement,
-  useEffect,
-  useRef,
-  useState,
-  useTransition,
-} from "../lib/react";
+import { createElement, useState, useTransition } from "../lib/react";
+import Counter from "./components/Counter";
+import Input from "./components/Input";
 
 async function fetchMockMessaage(): Promise<string> {
   return new Promise((resolve) => {
@@ -41,16 +37,10 @@ const PostsTab = function PostsTab() {
 };
 
 export default function App() {
-  const [count, setCount] = useState<number>(0);
-
   const [isPending, startTransition] = useTransition();
-
-  const [appMessage, setAppMessage] = useState<string>("loading...");
-
+  console.log("app re");
   const [type, setType] = useState<"counter" | "input" | "hugeData">("input");
-  const testRef = useRef<any>({});
-  const domRef = useRef<Element>(null)
-  console.log(domRef)
+
   // useEffect(() => {
   //   console.log("app mount");
   //   (async () => {
@@ -63,94 +53,9 @@ export default function App() {
 
   const content =
     type === "counter"
-      ? createElement(
-          "div",
-          {
-            style: {
-              backgroundColor: "lightgray",
-            },
-          },
-          // 创建按钮 +1
-          createElement(
-            "button",
-            {
-              key: "btn1",
-              style: {
-                backgroundColor: "#4CAF50", // 绿色
-                color: "white",
-                padding: "12px 25px",
-                border: "none",
-                borderRadius: "5px",
-                cursor: "pointer",
-                fontSize: "16px",
-                transition: "all 0.3s ease",
-                boxShadow: "0 4px 6px rgba(0, 0, 0, 0.2)",
-              },
-              ref: domRef,
-              onClick: () => {
-                setCount((prev) => {
-                  testRef.current = prev;
-                  return prev + 1;
-                });
-              },
-              onMouseEnter: (e) => {
-                e.target.style.transform = "scale(1.1)";
-              },
-              onMouseLeave: (e) => {
-                e.target.style.transform = "scale(1)";
-              },
-            },
-            "+1"
-          ),
-
-          // 创建按钮 +2
-          createElement(
-            "button",
-            {
-              key: "btn2",
-              style: {
-                backgroundColor: "#2196F3", // 蓝色
-                color: "white",
-                padding: "12px 25px",
-                border: "none",
-                borderRadius: "5px",
-                cursor: "pointer",
-                fontSize: "16px",
-                transition: "all 0.3s ease",
-                boxShadow: "0 4px 6px rgba(0, 0, 0, 0.2)",
-              },
-              onClick: () => {
-                setCount((prev) => prev + 2);
-              },
-              onMouseEnter: (e) => {
-                e.target.style.transform = "scale(1.1)";
-              },
-              onMouseLeave: (e) => {
-                e.target.style.transform = "scale(1)";
-              },
-            },
-            "+2"
-          ),
-
-          createElement("div", {}, "计数器：", String(count))
-        )
+      ? createElement(Counter, {})
       : type === "input"
-      ? createElement(
-          "div",
-          {},
-          createElement("input", {
-            onInput: (e) => {
-              setAppMessage(e.target.value);
-            },
-            value: appMessage,
-            style: {
-              display: "block",
-              width: "100%",
-            },
-            placeholder: "请输入内容",
-          }),
-          appMessage
-        )
+      ? createElement(Input, {})
       : createElement(PostsTab, {});
 
   // return createElement(

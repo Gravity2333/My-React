@@ -34,7 +34,8 @@ export class UpdateQueue<State> {
   baseQueue: Update<State> | null;
   /** 基础state */
   baseState: State;
-
+  /** 上一次的state 历史记录 用来检查state是否改变 */
+  lastRenderedState: State;
   constructor() {
     /** 初始化 */
     this.shared = {
@@ -44,6 +45,8 @@ export class UpdateQueue<State> {
     this.dispatch = null;
     this.baseQueue = null;
     this.baseState = null;
+
+    this.lastRenderedState = null;
   }
 
   /** 入队，构造环状链表 */

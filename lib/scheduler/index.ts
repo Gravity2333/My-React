@@ -184,8 +184,6 @@ class Scheduler implements SchedulerInterface {
         this.requestHostCallback();
       }
     }
-    //@ts-ignore
-    console.log(JSON.stringify(this.taskQueue?.data))
     return userCallbackTask;
   }
 
