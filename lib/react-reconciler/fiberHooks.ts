@@ -233,7 +233,7 @@ function mountEffect(
   // 给fiber设置PassiveEffect 表示存在被动副作用
   (currentRenderingFiber as FiberNode).flags |= PassiveEffect;
   hook.memorizedState = pushEffect(
-    // 初始化状态下，所有的useEffect都执行，所以这里flag设置为   PassiveEffect|HookHasEffect
+    // 初始化状态下，所有的useEffect都执行，所以这里flag设置为   Passive|HookHasEffect
     Passive | HookHasEffect,
     create,
     null,
