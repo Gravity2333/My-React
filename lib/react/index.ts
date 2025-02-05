@@ -13,7 +13,15 @@ export type ReactElementType = string | Function | Symbol | number;
 export type ReactElementProps = Record<string, any>;
 /** key */
 export type Key = string;
-/** Ref */
+/** Ref
+ *  说一下Ref为什么要设计成 {current} 这种数据结构
+ *  一个比较重要的点是 要保证ref的稳定性
+ *  比如在函数组件内 ref的内容是保存在fiber.memorizedState上的
+ *  每次函数执行的时候 如果保存的是简单类型，虽然能保证每次都取得fiber.memorizedState上的值 但是react无法感知到ref的修改
+ *  const ref = useRef(0)
+ *  如果ref是简单类型 ref++ 只是在当前函数的作用域内的ref更新了 但是由于简单类型是拷贝 fiber.memorziedState无法感知到更新
+ *  如果是复杂类型 ref.current++ 在fiber.memorizesState中就可以同步更改
+ */
 export type Ref = { current: any } | ((current: any) => void);
 /** children  */
 export type ReactElementChildren =
@@ -78,7 +86,7 @@ export function createElement(
      *
      * forwardRef 会给ts推理带来麻烦 并且由于多了一层fiber组件 会造成性能降低 在v19将会移除
      *
-     * 
+     *
      */
     ref: props.ref ? props.ref : null,
     key: props.key ? String(props.key) : null,
@@ -106,4 +114,9 @@ export function useEffect(create: EffectCallback, deps: HookDeps) {
 export function useTransition() {
   const dispatcher = resolveDispatcher();
   return dispatcher.useTransition();
+}
+
+export function useRef<T>(initialValue: T) {
+  const dispatcher = resolveDispatcher();
+  return dispatcher.useRef<T>(initialValue);
 }

@@ -46,10 +46,10 @@ let currentHook: Hook | null = null;
 // 需要注意 wipxxx都是当前处理fiber tree上的 current都是当前已经渲染的fiber tre上的属性
 let renderLane: Lane = NoLane;
 // 导出共享变量
-export let isTransition = false
+export let isTransition = false;
 
 /** 运行函数组件以及hooks */
-export function renderWithHooks(wip: FiberNode,lane: Lane) {
+export function renderWithHooks(wip: FiberNode, lane: Lane) {
   // 主要作用是，运行函数组件 并且在函数运行上下文挂载currentDispatcher 在运行之后 卸载Dispatcher
   // 保证hook只能在函数组件内运行
 
@@ -63,13 +63,14 @@ export function renderWithHooks(wip: FiberNode,lane: Lane) {
 
   // 当前已经渲染的fiber
   const current = wip.alternate;
-	renderLane = lane;
+  renderLane = lane;
   if (current !== null) {
     // update
     currentDispatcher.current = {
       useState: updateState,
       useEffect: updateEffect,
       useTransition: updateTransition,
+      useRef: updateRef,
     };
   } else {
     // mount
@@ -77,6 +78,7 @@ export function renderWithHooks(wip: FiberNode,lane: Lane) {
       useState: mountState,
       useEffect: mountEffect,
       useTransition: mountTransition,
+      useRef: mountRef,
     };
   }
 
@@ -90,14 +92,14 @@ export function renderWithHooks(wip: FiberNode,lane: Lane) {
   workInProgressHook = null;
   currentHook = null;
   currentDispatcher.current = null;
-	renderLane = NoLane;
+  renderLane = NoLane;
   return childrenElements;
 }
 
 /** 挂载state */
 function mountState<T>(initialState): [T, Dispatch<T>] {
   const hook = mountWorkInProgressHook();
- 
+
   let memorizedState: T;
   // 计算初始值
   if (typeof initialState === "function") {
@@ -114,7 +116,7 @@ function mountState<T>(initialState): [T, Dispatch<T>] {
     currentRenderingFiber,
     hook.updateQueue
   );
-  hook.updateQueue.baseState = memorizedState
+  hook.updateQueue.baseState = memorizedState;
   return [memorizedState, hook.updateQueue.dispatch];
 }
 
@@ -122,10 +124,7 @@ function mountState<T>(initialState): [T, Dispatch<T>] {
 function updateState<T>(): [T, Dispatch<T>] {
   const hook = updateWorkInProgressHook();
 
-  const { memorizedState } = hook.updateQueue.process(
-    renderLane,
-    true
-  );
+  const { memorizedState } = hook.updateQueue.process(renderLane, true);
   hook.memorizedState = memorizedState;
   return [memorizedState, hook.updateQueue.dispatch];
 }
@@ -325,37 +324,50 @@ function shallowEqual(prevDeps: HookDeps, curDeps: HookDeps) {
 /** transition */
 function mountTransition() {
   // 设置pending state
-  const [isPending, setPending] = mountState<boolean>(false)
+  const [isPending, setPending] = mountState<boolean>(false);
   // 获得hook
-  const hook = mountWorkInProgressHook()
+  const hook = mountWorkInProgressHook();
   // 创建startTransition
-  const start = startTransition.bind(null, setPending)
+  const start = startTransition.bind(null, setPending);
   // 记录start
-  hook.memorizedState = start
+  hook.memorizedState = start;
   // 返回pending和start
-  return [isPending, start] as [boolean, (callback: () => void) => void]
+  return [isPending, start] as [boolean, (callback: () => void) => void];
 }
 
 function updateTransition() {
-  const [isPending] = updateState<boolean>()
-  const hook = updateWorkInProgressHook()
-  const start = hook.memorizedState
-  return [isPending, start] as [boolean, (callback: () => void) => void]
+  const [isPending] = updateState<boolean>();
+  const hook = updateWorkInProgressHook();
+  const start = hook.memorizedState;
+  return [isPending, start] as [boolean, (callback: () => void) => void];
 }
 
 function startTransition(setPending: Dispatch<boolean>, callback: () => void) {
   // 开始transition 第一次更新 此时优先级高
-  setPending(true)
+  setPending(true);
   // transition过程，下面的优先级低
-  const prevTransition = isTransition
+  const prevTransition = isTransition;
 
   // 设置标记 表示处于transition过程中，在fiberHook.ts/requestUpdateLane会判断这个变量，如果true则返回transtionLane
-  isTransition = true
+  isTransition = true;
   // 设置标记 （在react原版中 这里是 1）
   // 第二次更新 优先级低
-  callback()
+  callback();
   // 第三次更新 重新设置pending 优先级低
-  setPending(false)
+  setPending(false);
   // 恢复isTransition
-  isTransition = prevTransition
+  isTransition = prevTransition;
+}
+
+/** 挂载Ref */
+function mountRef<T>(initialValue: T): { current: T } {
+  const hook = mountWorkInProgressHook();
+  hook.memorizedState = { current: initialValue };
+  return hook.memorizedState;
+}
+
+/** 更新Ref 其实就是保存一个值 */
+function updateRef<T>(): { current: T } {
+  const hook = updateWorkInProgressHook();
+  return hook.memorizedState;
 }
