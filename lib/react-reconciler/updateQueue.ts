@@ -16,10 +16,19 @@ export class Update<State> {
   next: Update<State>;
   action: Action<State>;
   lane: Lane; // 当前更新的优先级Lane
+  /** eagerState的逻辑
+   *  eagerState 急迫的状态修改
+   *  当 当前updateQueue中无update时，会启用该优化
+   *  次优化会在调度update之前就运行一下action 判断值是否变化 如果没变化 则把update加入queue 并且推出此次update 调度
+   */
+  hasEagerState: boolean;
+  eagerState: State;
   constructor(action: Action<State>, lane: Lane) {
     this.action = action;
     this.next = null;
     this.lane = lane;
+    this.hasEagerState = false;
+    this.eagerState = null;
   }
 }
 
@@ -133,14 +142,18 @@ export class UpdateQueue<State> {
             newBaseQueueLast = newBaseQueueLast.next = clone;
           }
 
-          // 不论存不存在newBaseFirst 都要计算memorizedState
-          const currentAction = currentUpdate.action;
-          if (currentAction instanceof Function) {
-            /** Action是函数类型 运行返回newState */
-            memorizedState = currentAction(memorizedState);
+          if (currentUpdate.hasEagerState) {
+            memorizedState = currentUpdate.eagerState;
           } else {
-            /** 非函数类型，直接赋给新的state */
-            memorizedState = currentAction;
+            // 不论存不存在newBaseFirst 都要计算memorizedState
+            const currentAction = currentUpdate.action;
+            if (currentAction instanceof Function) {
+              /** Action是函数类型 运行返回newState */
+              memorizedState = currentAction(memorizedState);
+            } else {
+              /** 非函数类型，直接赋给新的state */
+              memorizedState = currentAction;
+            }
           }
         } else {
           // 无权限

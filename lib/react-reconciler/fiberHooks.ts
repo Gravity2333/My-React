@@ -234,6 +234,24 @@ function dispatchSetState<State>(
   const lane = requestUpdateLane();
   // 创建一个update对象
   const update = new Update(action, lane);
+  if (updateQueue.shared.pending === null && fiber.lanes === NoLane) {
+    // 没有其他更新任务的时候进行eagerState优化
+    const currentState = updateQueue.lastRenderedState;
+    let eagerState: any;
+    if (typeof action === "function") {
+      eagerState = (action as Function)(currentState);
+    } else {
+      eagerState = action;
+    }
+
+    // 判断 eagerState 和 currentState
+    if (Object.is(eagerState, currentState)) {
+      update.hasEagerState = true;
+      update.eagerState = eagerState;
+      // updateQueue.enqueue(update, fiber, NoLane); // 优先级为NoLane 保证在下一次update可以消耗掉此次update
+      return;
+    }
+  }
   // 入队 并且加入到fiber上
   updateQueue.enqueue(update, fiber, lane);
   // 开启调度时，也需要传入当前优先级
