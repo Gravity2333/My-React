@@ -1,10 +1,13 @@
-import { createElement, useRef, useState } from "../../../lib/react";
+import { createElement, useMemo, useRef, useState } from "../../../lib/react";
 
 export default function Counter() {
   const [count, setCount] = useState<number>(0);
   const testRef = useRef<any>({});
   const domRef = useRef<Element>(null);
-  console.log("counter re");
+  const countPlusTen = useMemo(() => {
+    return count + 10;
+  }, [count]);
+  console.log("counter re", countPlusTen);
   return createElement(
     "div",
     {

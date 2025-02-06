@@ -120,3 +120,14 @@ export function useRef<T>(initialValue: T) {
   const dispatcher = resolveDispatcher();
   return dispatcher.useRef<T>(initialValue);
 }
+
+// useMemo 和 useCallback的区别仅仅是 memo会运行nextCreate取得结果 useCallback会直接返回callback
+export function useMemo<T>(nextCreate: () => T, deps: HookDeps) {
+  const dispatcher = resolveDispatcher();
+  return dispatcher.useMemo<T>(nextCreate, deps);
+}
+
+export function useCallback<T>(callback: T, deps: HookDeps) {
+  const dispatcher = resolveDispatcher();
+  return dispatcher.useCallback<T>(callback, deps);
+}

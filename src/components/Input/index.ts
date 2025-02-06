@@ -3,7 +3,7 @@ import { createElement, useState } from "../../../lib/react";
 export default function Input() {
   console.log('input re')
   const [appMessage, setAppMessage] = useState<string>("loading...");
-
+  
   return createElement(
     "div",
     {},

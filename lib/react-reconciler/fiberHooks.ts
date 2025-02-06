@@ -1,7 +1,13 @@
 import { currentDispatcher } from "../react/currentDispatcher";
 import { markWipReceiveUpdate } from "./beginwork";
 import { FiberNode } from "./fiber";
-import { Lane, mergeLane, NoLane, removeLanes, requestUpdateLane } from "./fiberLanes";
+import {
+  Lane,
+  mergeLane,
+  NoLane,
+  removeLanes,
+  requestUpdateLane,
+} from "./fiberLanes";
 import { Flags, PassiveEffect } from "./flags";
 import { HookHasEffect, Passive } from "./hookEffectTags";
 import {
@@ -72,6 +78,8 @@ export function renderWithHooks(wip: FiberNode, lane: Lane) {
       useEffect: updateEffect,
       useTransition: updateTransition,
       useRef: updateRef,
+      useMemo: updateMemo,
+      useCallback: updateCallback,
     };
   } else {
     // mount
@@ -80,6 +88,8 @@ export function renderWithHooks(wip: FiberNode, lane: Lane) {
       useEffect: mountEffect,
       useTransition: mountTransition,
       useRef: mountRef,
+      useMemo: mountMemo,
+      useCallback: mountCallback,
     };
   }
 
@@ -266,7 +276,7 @@ function updateEffect(
   const hook = updateWorkInProgressHook();
   const prevDeps = hook.memorizedState.deps;
   const destory = hook.memorizedState.destory;
-  if (shallowEqual(prevDeps, deps)) {
+  if (areHookInputsEqual(prevDeps, deps)) {
     // 相等 pushEffect 并且设置tag为Passive 被动副作用
     hook.memorizedState = pushEffect(
       Passive,
@@ -326,7 +336,7 @@ function pushEffect(
 }
 
 /** 潜比较Deps */
-function shallowEqual(prevDeps: HookDeps, curDeps: HookDeps) {
+function areHookInputsEqual(prevDeps: HookDeps, curDeps: HookDeps) {
   if (prevDeps === null || curDeps === null) return false;
   if (prevDeps?.length !== curDeps?.length) return false;
   for (let i = 0; i < prevDeps.length; i++) {
@@ -389,13 +399,49 @@ function updateRef<T>(): { current: T } {
   return hook.memorizedState;
 }
 
+/** useMemo */
+function mountMemo<T>(nextCreate, deps) {
+  const hook = mountWorkInProgressHook();
+  hook.memorizedState = [nextCreate(), deps];
+  return hook.memorizedState[0];
+}
+
+function updateMemo<T>(nextCreate, deps) {
+  const hook = updateWorkInProgressHook();
+  const [prevValue, prevDeps] = hook.memorizedState;
+  if (areHookInputsEqual(prevDeps, deps)) {
+    hook.memorizedState = [prevValue, deps];
+  } else {
+    hook.memorizedState = [nextCreate(), deps];
+  }
+  return hook.memorizedState[0];
+}
+
+/** useCallback */
+function mountCallback<T>(callback, deps) {
+  const hook = mountWorkInProgressHook();
+  hook.memorizedState = [callback, deps];
+  return hook.memorizedState[0];
+}
+
+function updateCallback<T>(callback, deps) {
+  const hook = updateWorkInProgressHook();
+  const [prevCallback, prevDeps] = hook.memorizedState;
+  if (areHookInputsEqual(prevDeps, deps)) {
+    hook.memorizedState = [prevCallback, deps];
+  } else {
+    hook.memorizedState = [callback, deps];
+  }
+  return hook.memorizedState[0];
+}
+
 /** 重置hook */
-export function bailoutHook(wip: FiberNode,renderLane: Lane){
-  const current = wip.alternate
-  if(current!==null){
-    wip.updateQueue = current.updateQueue // effectes
+export function bailoutHook(wip: FiberNode, renderLane: Lane) {
+  const current = wip.alternate;
+  if (current !== null) {
+    wip.updateQueue = current.updateQueue; // effectes
     wip.flags &= ~PassiveEffect;
     // 去掉current上的renderLane 因为此次renderLane没生效
-    current.lanes = removeLanes(current.lanes,renderLane)
+    current.lanes = removeLanes(current.lanes, renderLane);
   }
 }

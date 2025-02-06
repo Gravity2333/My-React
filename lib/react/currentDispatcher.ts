@@ -6,6 +6,8 @@ export interface Dispatcher {
   useEffect: (create: EffectCallback, deps: HookDeps) => EffectCallback | void;
   useTransition: () => [boolean, (callback: () => void) => void];
   useRef: <T>(initialValue: T) => { current: T };
+  useMemo: <T>(nextCreate: () => T, deps: HookDeps) => T;
+  useCallback: <T>(callback: T, deps: HookDeps) => T;
 }
 
 /** 共享的 当前的Dispatcher */
