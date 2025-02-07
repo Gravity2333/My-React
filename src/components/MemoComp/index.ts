@@ -13,4 +13,7 @@ export default memo(function MemoComp() {
     },
     "MEMO COMPONENT （when menu change， this component never rerender）"
   );
-});
+},
+// compare 函数可以不传递
+// ()=>true
+);

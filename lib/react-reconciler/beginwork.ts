@@ -231,8 +231,10 @@ function updateMemoComponent(wip: FiberNode, renderLane: Lane) {
     const oldProps = current.pendingProps;
     const newProps = wip.pendingProps;
 
-    // Props需要用ShallowEqual判断
-    if (shallowEqual(oldProps, newProps)) {
+    // Props默认需要用ShallowEqual判断 可以传入compare函数替换
+    const compare = (wip.type as any).compare || shallowEqual;
+
+    if (compare(oldProps, newProps)) {
       // 判断state context
       if (!checkUpdate(wip, renderLane)) {
         // 需要bailout
