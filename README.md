@@ -4,19 +4,72 @@
 
 My-React 是一个轻量级的 React 克隆实现，包含核心的 `createElement`、`useState`、`useEffect`、`useTransition` 等功能。
 
-本项目简化了React关键逻辑，实现清晰易懂，并且附加详细注释
-
 ## 主要功能
 
 - **虚拟 DOM 创建**: 提供 `createElement` 方法创建虚拟 DOM 结构。
 - **Hooks 支持**: 实现了 `useState`、`useEffect`、`useTransition`、`useRef`、`useMemo`、`useCallback`。
 - **组件管理**: 支持函数组件和类组件，提供 `forwardRef` 机制。
 
+## 组件库使用示例
+
+### `index.ts`
+
+```tsx
+import { createElement } from "../lib/react";
+import { createRoot } from "../lib/react-dom";
+import App from "./App";
+
+const root = createRoot(document.querySelector("#root-master"));
+root.render(createElement(App, {}));
+```
+
+### `app.ts`
+
+```tsx
+import { createElement, useState, useTransition } from "../lib/react";
+import Counter from "./components/Counter";
+import Input from "./components/Input";
+import MemoComp from "./components/MemoComp";
+
+function SlowPost() {
+  const startTime = performance.now();
+  while (performance.now() - startTime < 4) {}
+
+  return createElement("h3", { style: { color: "#61dafb", fontSize: "28px", fontWeight: "700" } }, "Slow Item Render Need 4ms");
+}
+
+const PostsTab = () => {
+  const items = [];
+  for (let i = 0; i < 500; i++) {
+    items.push(createElement(SlowPost, {}));
+  }
+  return items;
+};
+
+export default function App() {
+  const [isPending, startTransition] = useTransition();
+  const [type, setType] = useState<"counter" | "input" | "hugeData">("input");
+
+  const content =
+    type === "counter"
+      ? createElement(Counter, {})
+      : type === "input"
+      ? createElement(Input, {})
+      : createElement(PostsTab, {});
+
+  return createElement("div", {}, [
+    createElement("button", { key: "counter-btn", onClick: () => setType("counter") }, "计数器"),
+    createElement("button", { key: "input-btn", onClick: () => setType("input") }, "输入框"),
+    createElement("button", { key: "hugedata-btn", onClick: () => startTransition(() => setType("hugeData")) }, "大量数据 测试useTransition"),
+    isPending ? "Loading Data..." : content,
+    createElement(MemoComp, {}),
+  ]);
+}
+```
+
 ## 代码解析
 
-### `createElement` 方法
-
-`createElement` 用于创建 ReactElement，并对 `children` 进行处理。
+### `createElement`
 
 ```tsx
 export function createElement(
@@ -52,7 +105,6 @@ export function useState<State>(initialState: (() => State) | State) {
   return dispatcher.useState(initialState);
 }
 
-// 使用示例
 const [count, setCount] = useState(0);
 setCount(count + 1);
 ```
@@ -67,7 +119,6 @@ export function useEffect(create: EffectCallback, deps: HookDeps) {
   return dispatcher.useEffect(create, deps);
 }
 
-// 使用示例
 useEffect(() => {
   console.log("组件挂载");
   return () => console.log("组件卸载");
@@ -84,62 +135,17 @@ export function useTransition() {
   return dispatcher.useTransition();
 }
 
-// 使用示例
 const [isPending, startTransition] = useTransition();
+
 function handleClick() {
   startTransition(() => {
-    setData(newData);
+    setType("hugeData");
   });
 }
 
 <button onClick={handleClick} disabled={isPending}>
-  {isPending ? "Loading..." : "更新数据"}
+  {isPending ? "Loading..." : "大量数据 测试useTransition"}
 </button>
-```
-
-#### `useMemo`
-
-缓存计算结果，避免不必要的重新计算。
-
-```tsx
-export function useMemo<T>(nextCreate: () => T, deps: HookDeps) {
-  const dispatcher = resolveDispatcher();
-  return dispatcher.useMemo<T>(nextCreate, deps);
-}
-
-// 使用示例
-const memoizedValue = useMemo(() => computeExpensiveValue(a, b), [a, b]);
-```
-
-#### `useCallback`
-
-缓存回调函数，避免不必要的重新创建。
-
-```tsx
-export function useCallback<T>(callback: T, deps: HookDeps) {
-  const dispatcher = resolveDispatcher();
-  return dispatcher.useCallback<T>(callback, deps);
-}
-
-// 使用示例
-const memoizedCallback = useCallback(() => {
-  doSomething(a, b);
-}, [a, b]);
-```
-
-#### `useRef`
-
-创建一个可变的 ref 对象，不会触发组件重新渲染。
-
-```tsx
-export function useRef<T>(initialValue: T) {
-  const dispatcher = resolveDispatcher();
-  return dispatcher.useRef<T>(initialValue);
-}
-
-// 使用示例
-const inputRef = useRef(null);
-<input ref={inputRef} />;
 ```
 
 ## 运行方式
