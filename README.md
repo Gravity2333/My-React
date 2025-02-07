@@ -9,6 +9,7 @@ My-React 是一个轻量级的 React 克隆实现，包含核心的 `createEleme
 - **虚拟 DOM 创建**: 提供 `createElement` 方法创建虚拟 DOM 结构。
 - **Hooks 支持**: 实现了 `useState`、`useEffect`、`useTransition`、`useRef`、`useMemo`、`useCallback`。
 - **组件管理**: 支持函数组件和类组件，提供 `forwardRef` 机制。
+- **调度器支持**: 集成了 `scheduler` 任务调度，提高渲染性能。
 
 ## 组件库使用示例
 
@@ -91,6 +92,19 @@ export function createElement(
     },
   };
 }
+```
+
+### `scheduler` 调度器实现
+
+该项目集成了 `scheduler` 任务调度机制，提高任务执行的性能和流畅度。
+调度器单独拆包 请移步 https://github.com/Gravity2333/my-scheduler
+
+```tsx
+import { scheduleCallback, IdlePriority } from "../lib/scheduler";
+
+scheduleCallback(IdlePriority, () => {
+  console.log("执行低优先级任务");
+});
 ```
 
 ### 实现的 Hooks
