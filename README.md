@@ -1,4 +1,5 @@
 ## 自己写一个REACT!
+⚠️ 本分支为React最简易实现 只包含了fiber和虚拟dom之间的转换 如需查看更细节实现 包含lane scheduler 并发更新 主要hook 请切换到learn📑分支！
 ## 使用方式
 npm install
 npm run dev
