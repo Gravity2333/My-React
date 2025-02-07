@@ -1,15 +1,15 @@
 {
   "name": "my-react",
   "version": "1.0.0",
-  "description": "",
+  "description": "一个自己实现的React 简化了关键步骤的实现 清晰易懂",
   "main": "index.js",
   "scripts": {
-    "dev": "npx webpack-dev-server",
+    "start": "npx webpack-dev-server",
     "build": "npx webpack",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
+  "author": "Gravity2333",
   "license": "ISC",
   "devDependencies": {
     "html-webpack-plugin": "^5.6.0",
