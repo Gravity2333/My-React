@@ -11,10 +11,12 @@ import {
   HostComponent,
   HostRoot,
   HostText,
+  MemoComponent,
 } from "./workTag";
 import { bailoutHook, renderWithHooks } from "./fiberHooks";
 import { includeSomeLanes, Lane, NoLane } from "./fiberLanes";
 import { Ref } from "./flags";
+import shallowEqual from "../utils/shallowEqual";
 
 /** 是否收到更新 默认为false 即没有更新 开启bailout */
 let didReceiveUpdate: boolean = false;
@@ -72,6 +74,10 @@ export function beginWork(wip: FiberNode, renderLane: Lane): FiberNode | null {
 
   // 比较，当前的fiber 和 旧的fiber
   switch (wip.tag) {
+    case Fragment:
+      return updateFragment(wip);
+    case MemoComponent:
+      return updateMemoComponent(wip, renderLane);
     case HostRoot:
       return updateHostRoot(wip, renderLane);
     case HostComponent:
@@ -79,9 +85,7 @@ export function beginWork(wip: FiberNode, renderLane: Lane): FiberNode | null {
     case HostText:
       return null;
     case FunctionComponent:
-      return updateFunctionComponent(wip, renderLane);
-    case Fragment:
-      return updateFragment(wip);
+      return updateFunctionComponent(wip, wip.type as Function, renderLane);
     default:
       console.warn("beginWork未实现的类型", wip.tag);
       break;
@@ -173,9 +177,13 @@ function updateHostComponent(wip: FiberNode): FiberNode {
 }
 
 /** 处理函数节点的比较 */
-function updateFunctionComponent(wip: FiberNode, renderLane: Lane): FiberNode {
+function updateFunctionComponent(
+  wip: FiberNode,
+  Component: Function,
+  renderLane: Lane
+): FiberNode {
   // renderWithHooks 中检查，如果状态改变 则置didReceiveUpdate = true
-  const nextChildElement = renderWithHooks(wip, renderLane);
+  const nextChildElement = renderWithHooks(wip, Component, renderLane);
   if (wip.alternate !== null && !didReceiveUpdate) {
     // bailout
     // 重置hook
@@ -210,4 +218,36 @@ function markRef(wip: FiberNode) {
     wip.flags |= Ref;
     return;
   }
+}
+
+/** 更新MemoComponent */
+function updateMemoComponent(wip: FiberNode, renderLane: Lane) {
+  // 需要检验四要素 type state(update) props context(TODO)
+  // 运行到此 type一定是相等的 需要判断state props context
+
+  const current = wip.alternate;
+  if (current !== null) {
+    // update阶段才bailout检查
+    const oldProps = current.pendingProps;
+    const newProps = wip.pendingProps;
+
+    // Props需要用ShallowEqual判断
+    if (shallowEqual(oldProps, newProps)) {
+      // 判断state context
+      if (!checkUpdate(wip, renderLane)) {
+        // 需要bailout
+        didReceiveUpdate = false;
+        // 重置props 注意 这里的oldProps newProps地址不一定一样
+        wip.pendingProps = oldProps;
+        // 重置当前lane
+        // 推出之后 需要恢复lanes
+        wip.lanes = current.lanes;
+        return bailoutOnAlreadyFinishedWork(wip, renderLane);
+      }
+    }
+  }
+
+  // 如果不能bailout 执行函数
+  const Component = (wip.type as any).type;
+  return updateFunctionComponent(wip, Component, renderLane);
 }

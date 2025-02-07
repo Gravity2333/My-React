@@ -56,7 +56,11 @@ let renderLane: Lane = NoLane;
 export let isTransition = false;
 
 /** 运行函数组件以及hooks */
-export function renderWithHooks(wip: FiberNode, lane: Lane) {
+export function renderWithHooks(
+  wip: FiberNode,
+  Component: Function,
+  lane: Lane
+) {
   // 主要作用是，运行函数组件 并且在函数运行上下文挂载currentDispatcher 在运行之后 卸载Dispatcher
   // 保证hook只能在函数组件内运行
 
@@ -94,9 +98,8 @@ export function renderWithHooks(wip: FiberNode, lane: Lane) {
   }
 
   // 运行函数
-  const ComponentFn = wip.type as Function;
   const pendingProps = wip.pendingProps;
-  const childrenElements = ComponentFn(pendingProps);
+  const childrenElements = Component(pendingProps);
 
   // 恢复
   currentRenderingFiber = null;

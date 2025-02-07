@@ -5,7 +5,7 @@
  */
 
 import { EffectCallback, HookDeps } from "../react-reconciler/fiberHooks";
-import { REACT_ELEMENT_TYPE } from "../react-reconciler/ReactSymbols";
+import { REACT_ELEMENT_TYPE } from "../share/ReactSymbols";
 import { currentDispatcher, resolveDispatcher } from "./currentDispatcher";
 
 export type ReactElementType = string | Function | Symbol | number;
@@ -131,3 +131,5 @@ export function useCallback<T>(callback: T, deps: HookDeps) {
   const dispatcher = resolveDispatcher();
   return dispatcher.useCallback<T>(callback, deps);
 }
+
+export * from './memo'

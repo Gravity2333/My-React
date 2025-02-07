@@ -7,9 +7,15 @@ import {
   ReactElementType,
   Ref,
 } from "../react";
-import { REACT_FRAGMENT_TYPE } from "./ReactSymbols";
+import { REACT_FRAGMENT_TYPE, REACT_MEMO_TYPE } from "../share/ReactSymbols";
 import { UpdateQueue } from "./updateQueue";
-import { Fragment, FunctionComponent, HostComponent, WorkTag } from "./workTag";
+import {
+  Fragment,
+  FunctionComponent,
+  HostComponent,
+  MemoComponent,
+  WorkTag,
+} from "./workTag";
 import { Effect } from "./fiberHooks";
 import { Lane, Lanes, NoLane, NoLanes } from "./fiberLanes";
 
@@ -33,7 +39,7 @@ export class FiberNode {
   /** element对应的Type */
   type: ReactElementType;
   /** ref */
-  ref: Ref
+  ref: Ref;
 
   // 对应的dom节点 可能为null
   stateNode: any;
@@ -199,7 +205,11 @@ export function creareFiberFromElement(element: ReactElement): FiberNode {
   if (typeof element.type === "string") {
     fiberTag = HostComponent;
   } else if (typeof element.type === "object") {
-    // TODO
+    switch ((element.type as any)?.$$typeof) {
+      case REACT_MEMO_TYPE:
+        // 设置memo类型的fiberTag
+        fiberTag = MemoComponent;
+    }
   } else if (element.type === REACT_FRAGMENT_TYPE) {
     fiberTag = Fragment;
     return createFiberFromFragment(element.props.children, element.key);
@@ -208,7 +218,7 @@ export function creareFiberFromElement(element: ReactElement): FiberNode {
   const fiber = new FiberNode(fiberTag, pendingProps, element.key);
   fiber.type = element.type;
   // 这里需要设置ref 新创建的fiber节点 非复用的情况下 需要从element.ref获取ref
-  fiber.ref = element.ref
+  fiber.ref = element.ref;
   return fiber;
 }
 

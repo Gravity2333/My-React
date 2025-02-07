@@ -7,6 +7,7 @@ import {
   HostComponent,
   HostRoot,
   HostText,
+  MemoComponent,
 } from "./workTag";
 import { NoLane } from "./fiberLanes";
 
@@ -60,6 +61,7 @@ export function completeWork(wip: FiberNode) {
     case HostRoot:
     case FunctionComponent:
     case Fragment:
+    case MemoComponent:
       bubbleProperties(wip);
       return null;
     default:

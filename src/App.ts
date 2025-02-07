@@ -1,6 +1,7 @@
 import { createElement, useState, useTransition } from "../lib/react";
 import Counter from "./components/Counter";
 import Input from "./components/Input";
+import MemoComp from "./components/MemoComp";
 
 async function fetchMockMessaage(): Promise<string> {
   return new Promise((resolve) => {
@@ -133,7 +134,7 @@ export default function App() {
     createElement(
       "button",
       {
-        key:'counter-btn',
+        key: "counter-btn",
         onClick: () => {
           setType("counter");
         },
@@ -144,7 +145,7 @@ export default function App() {
     createElement(
       "button",
       {
-        key:'input-btn',
+        key: "input-btn",
         onClick: () => {
           setType("input");
         },
@@ -155,7 +156,7 @@ export default function App() {
     createElement(
       "button",
       {
-        key:'hugedata-btn',
+        key: "hugedata-btn",
         onClick: () => {
           startTransition(() => {
             setType("hugeData");
@@ -165,5 +166,6 @@ export default function App() {
       "大量数据 测试useTransition"
     ),
     isPending ? "Loading Data..." : content,
+    createElement(MemoComp, {}),
   ]);
 }
