@@ -1,4 +1,4 @@
-import { createElement, useMemo, useRef, useState } from "../../../lib/react";
+import { createElement, useEffect, useMemo, useRef, useState } from "../../../lib/react";
 
 export default function Counter() {
   const [count, setCount] = useState<number>(0);
@@ -8,6 +8,14 @@ export default function Counter() {
     return count + 10;
   }, [count]);
   console.log("counter re", countPlusTen);
+
+  // useEffect(()=>{
+  //   setInterval(()=>{
+  //     setCount(count+1)
+  //     // 放开后测试 不管执行多少次 count一直被设置为1 闭包陷阱问题
+  //   },1000)
+  // },[])
+
   return createElement(
     "div",
     {
