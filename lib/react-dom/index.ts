@@ -31,22 +31,25 @@ const updateContainer = (element: ReactElement, root: FiberRootNode) => {
     // 获hostRootFiber
     const hostRootFiber = root.current;
     // 更新的Element元素入队
-    hostRootFiber.updateQueue?.enqueue(new Update<ReactElement>(element,lane), hostRootFiber, lane);
+    hostRootFiber.updateQueue?.enqueue(
+      new Update<ReactElement>(element, lane),
+      hostRootFiber,
+      lane
+    );
     // scheduleUpdateOnFiber 调度更新
     scheduleUpdateOnFiber(root.current, lane);
-  })
+  });
 };
 
 /** 创建根节点的入口 */
 export function createRoot(container: Container) {
   // 创建FiberRootNode
   const root = createContainer(container);
-  // 初始化合成事件
-  initEvent(container);
   return {
     render(element: ReactElement) {
       // TODO
       // 初始化合成事件
+      initEvent(container);
       // 更新contianer
       return updateContainer(element, root);
     },

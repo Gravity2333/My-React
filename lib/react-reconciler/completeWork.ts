@@ -27,9 +27,11 @@ export function completeWork(wip: FiberNode) {
       if (currentFiber && currentFiber.stateNode) {
         // update
         // 检查pendingProps和memroizedProps 如何不同则打上Update更新标签
-        if (pendingProps !== wip.memorizedProps) {
-          wip.flags != Update;
-        }
+        // if (pendingProps !== wip.memorizedProps) {
+        //   wip.flags |= Update;
+        // }  
+        // 不要这样写 会导致事件处理函数的闭包陷阱 我们需要在每次更新的时候 update新的event
+        wip.flags |= Update;
       } else {
         // mount
         // 挂载阶段，直接创建DOM,保存到stateNode

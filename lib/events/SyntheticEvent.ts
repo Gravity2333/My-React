@@ -18,7 +18,8 @@ const stopPropagationKey = "__stopPropagation";
 const isEvent = (key) => reactEventSet.has(key);
 
 /** 判断是否为属性（排除过滤掉event和children） */
-const isAttribute = (key) => key !== "children" && !isEvent(key);
+const isAttribute = (key) => key !== "children" 
+// && !isEvent(key);
 
 /**
  * 在DOM上挂上Fiber代理的属性 方便合成事件这些操作

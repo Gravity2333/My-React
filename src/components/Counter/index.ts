@@ -65,7 +65,7 @@ export default function Counter() {
           boxShadow: "0 4px 6px rgba(0, 0, 0, 0.2)",
         },
         onClick: () => {
-          setCount((prev) => prev + 2);
+          setCount(count + 2);
         },
         onMouseEnter: (e) => {
           e.target.style.transform = "scale(1.1)";
@@ -76,6 +76,37 @@ export default function Counter() {
       },
       "+2"
     ),
+
+       // 创建按钮 +3
+       createElement(
+        "button",
+        {
+          key: "btn3",
+          style: {
+            backgroundColor: "red", // 蓝色
+            color: "white",
+            padding: "12px 25px",
+            border: "none",
+            borderRadius: "5px",
+            cursor: "pointer",
+            fontSize: "16px",
+            transition: "all 0.3s ease",
+            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.2)",
+          },
+          onClick: () => {
+            setTimeout(() => {
+              setCount(count + 3);
+            }, 1000);
+          },
+          onMouseEnter: (e) => {
+            e.target.style.transform = "scale(1.1)";
+          },
+          onMouseLeave: (e) => {
+            e.target.style.transform = "scale(1)";
+          },
+        },
+        "+3 (展示闭包陷阱 点击后延迟更新) 点击多次只更新一次"
+      ),
 
     createElement("div", {}, "计数器：", String(count))
   );
