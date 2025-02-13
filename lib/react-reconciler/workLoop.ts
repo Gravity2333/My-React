@@ -59,11 +59,11 @@ export function markUpdateLaneFromFiberToRoot(
   let parent = fiberNode.return; // parent表示父节点
   let node = fiberNode; // node标记当前节点
   while (parent !== null) {
-		parent.childLanes = mergeLane(parent.childLanes, lane);
-		const alternate = parent.alternate;
-		if (alternate !== null) {
-			alternate.childLanes = mergeLane(alternate.childLanes, lane);
-		}
+    parent.childLanes = mergeLane(parent.childLanes, lane);
+    const alternate = parent.alternate;
+    if (alternate !== null) {
+      alternate.childLanes = mergeLane(alternate.childLanes, lane);
+    }
     // 处理parent节点的childLanes
     node = parent;
     parent = parent.return;
@@ -303,10 +303,17 @@ export function commitRoot(root: FiberRootNode) {
   /** 设置调度 执行passiveEffect */
   /** 真正执行会在commit之后 不影响渲染 */
   /** commit阶段会收集effect到root.pendingPassiveEffect */
-  scheduler.scheduleCallback(
-    PriorityLevel.NORMAL_PRIORITY,
-    flushPassiveEffect.bind(null, root.pendingPassiveEffects)
-  );
+  // 有删除 或者收集到Passive 都运行
+  if (
+    (finishedWork.flags & PassiveMask) !== NoFlags ||
+    (finishedWork.subTreeFlags & PassiveMask) !== NoFlags
+  ) {
+    // 调度副作用
+    scheduler.scheduleCallback(
+      PriorityLevel.NORMAL_PRIORITY,
+      flushPassiveEffect.bind(null, root.pendingPassiveEffects)
+    );
+  }
 
   /** hostRootFiber是否有effect  */
   const hostRootFiberHasEffect =
