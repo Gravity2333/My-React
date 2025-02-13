@@ -151,7 +151,8 @@ function updateHostRoot(wip: FiberNode, renderLane: Lane): FiberNode {
   const updateQueue = wip.updateQueue;
   /** 这里hostRoot的update由updateContainer放入，其对应的action就是其element */
   const { memorizedState: newChildren } = updateQueue.process(renderLane);
-
+  /* 重新存储memroizedState */
+  wip.memorizedState = newChildren;
   if (newChildren === preChildren) {
     // bailout
     bailoutOnAlreadyFinishedWork(wip, renderLane);

@@ -81,12 +81,7 @@ export class UpdateQueue<State> {
   }
 
   /** 处理任务 */
-  process(
-    renderLane: Lane,
-    onSkipUpdate?: (update: Update<any>) => void
-  ) {
-    let cacheState = this.shared.pending;
-
+  process(renderLane: Lane, onSkipUpdate?: (update: Update<any>) => void) {
     /** 获取baseQueue pending 完成拼接 */
     let baseState = this.baseState;
     let baseQueue = this.baseQueue;
