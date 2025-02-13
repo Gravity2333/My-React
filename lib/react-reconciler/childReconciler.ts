@@ -1,5 +1,5 @@
 import {
-  creareFiberFromElement,
+  createFiberFromElement,
   createFiberFromFragment,
   createWorkInProgress,
   FiberNode,
@@ -178,7 +178,7 @@ function childReconciler(shouldTrackEffect: boolean) {
     }
 
     // 都没摘到key和type都相同的 创建
-    const newFiber = creareFiberFromElement(newChild);
+    const newFiber = createFiberFromElement(newChild);
     newFiber.return = wip;
     if (shouldTrackEffect) {
       /** 设置副作用 */
@@ -323,7 +323,7 @@ function generateNewFiberFromMap(
       existingChildren.delete(elementKey);
       return useFiber(beforeFiber, element.props);
     } else {
-      return creareFiberFromElement(element);
+      return createFiberFromElement(element);
     }
   }
 

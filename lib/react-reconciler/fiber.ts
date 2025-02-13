@@ -196,7 +196,7 @@ export function createWorkInProgress(
  * 从ReactElement对象 创建Fiber对象
  * @param element
  */
-export function creareFiberFromElement(element: ReactElement): FiberNode {
+export function createFiberFromElement(element: ReactElement): FiberNode {
   // 默认fiberTag = FunctionComponent
   let fiberTag: WorkTag = FunctionComponent;
   let pendingProps: ReactElementProps = element.props;
