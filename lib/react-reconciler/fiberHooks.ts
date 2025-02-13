@@ -142,7 +142,6 @@ function updateState<T>(): [T, Dispatch<T>] {
 
   const { memorizedState } = hook.updateQueue.process(
     renderLane,
-    true,
     (update) => {
       currentRenderingFiber.lanes = mergeLane(
         currentRenderingFiber.lanes,

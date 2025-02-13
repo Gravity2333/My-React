@@ -83,7 +83,6 @@ export class UpdateQueue<State> {
   /** 处理任务 */
   process(
     renderLane: Lane,
-    clean: boolean = false,
     onSkipUpdate?: (update: Update<any>) => void
   ) {
     let cacheState = this.shared.pending;
@@ -114,10 +113,6 @@ export class UpdateQueue<State> {
 
       // pending可以置空了
       this.shared.pending = null;
-
-      if (!clean) {
-        this.shared.pending = cacheState;
-      }
     }
 
     // 消费baseQueue过程
