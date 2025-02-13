@@ -1,4 +1,5 @@
 import { createElement, useState, useTransition } from "../lib/react";
+import { REACT_FRAGMENT_TYPE } from "../lib/share/ReactSymbols";
 import Counter from "./components/Counter";
 import Input from "./components/Input";
 import MemoComp from "./components/MemoComp";
@@ -130,7 +131,7 @@ export default function App() {
   //   )
   // );
 
-  return createElement("div", {}, [
+  return createElement(REACT_FRAGMENT_TYPE, {}, [
     createElement(
       "button",
       {
