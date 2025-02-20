@@ -1,6 +1,6 @@
 import { Container } from "../react-reconciler/fiber";
 import { ReactElementProps } from "../react";
-import { nativeEvents, reactEvents, reactEventSet } from "./events";
+import { eventTypeToSchedulerPriority, nativeEvents, reactEvents, reactEventSet } from "./events";
 import scheduler, { PriorityLevel } from "../scheduler";
 
 /** 转换Style */
@@ -145,7 +145,7 @@ function triggerEventListeners(
   event: Event
 ) {
   listeners.forEach((listener) =>
-    scheduler.runWithPriority(PriorityLevel.IMMEDIATE_PRIORITY, () => {
+    scheduler.runWithPriority(eventTypeToSchedulerPriority(event.type), () => {
       listener(event)
     })
   )
