@@ -1,5 +1,5 @@
 import { FiberNode } from "./fiber";
-import { NoFlags, Update } from "./flags";
+import { NoFlags, Ref, Update } from "./flags";
 import { updateFiberProps } from "../events/SyntheticEvent";
 import {
   Fragment,
@@ -26,6 +26,9 @@ export function completeWork(wip: FiberNode) {
       /** 处理HostComponent的情况 */
       if (currentFiber && currentFiber.stateNode) {
         // update
+        if (currentFiber.ref !== wip.ref) {
+          wip.flags |= Ref;
+				}
         // 检查pendingProps和memroizedProps 如何不同则打上Update更新标签
         // if (pendingProps !== wip.memorizedProps) {
         //   wip.flags |= Update;

@@ -8,7 +8,7 @@ import { EffectCallback, HookDeps } from "../react-reconciler/fiberHooks";
 import { REACT_ELEMENT_TYPE } from "../share/ReactSymbols";
 import { currentDispatcher, resolveDispatcher } from "./currentDispatcher";
 
-export type ReactElementType = string | Function | Symbol | number;
+export type ReactElementType = any;
 /** 属性类型 */
 export type ReactElementProps = Record<string, any>;
 /** key */
