@@ -5,6 +5,7 @@ export interface Dispatcher {
   useState: <T>(initialState: T | (() => T)) => [T, Dispatch<T>];
   useEffect: (create: EffectCallback, deps: HookDeps) => EffectCallback | void;
   useTransition: () => [boolean, (callback: () => void) => void];
+  useDeferedValue: <T>(T) => T;
   useRef: <T>(initialValue: T) => { current: T };
   useMemo: <T>(nextCreate: () => T, deps: HookDeps) => T;
   useCallback: <T>(callback: T, deps: HookDeps) => T;

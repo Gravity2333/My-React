@@ -258,6 +258,7 @@ export function renderRoot(
   let workLoopRetryTimes = 0;
 
   if (wipRootRenderLane !== lane) {
+    console.log('中断')
     // 避免重新进行初始化
     /** 先进行准备初始化 */
     prepareRefreshStack(root, lane);

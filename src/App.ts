@@ -12,7 +12,7 @@ async function fetchMockMessaage(): Promise<string> {
   });
 }
 
-function SlowPost({ index }) {
+export function SlowPost({ index }) {
   const startTime = performance.now();
   while (performance.now() - startTime < 4) {}
 
@@ -30,7 +30,7 @@ function SlowPost({ index }) {
   );
 }
 
-const PostsTab = function PostsTab() {
+export const PostsTab = function PostsTab() {
   const items = [];
   for (let i = 0; i < 500; i++) {
     items.push(createElement(SlowPost, {}));

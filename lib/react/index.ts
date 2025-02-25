@@ -116,6 +116,11 @@ export function useTransition() {
   return dispatcher.useTransition();
 }
 
+export function useDeferedValue<T>(value: T) {
+  const dispatcher = resolveDispatcher();
+  return dispatcher.useDeferedValue<T>(value);
+}
+
 export function useRef<T>(initialValue: T) {
   const dispatcher = resolveDispatcher();
   return dispatcher.useRef<T>(initialValue);

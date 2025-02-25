@@ -2,6 +2,8 @@ import { currentDispatcher } from "../react/currentDispatcher";
 import { markWipReceiveUpdate } from "./beginwork";
 import { FiberNode } from "./fiber";
 import {
+  DeferredLane,
+  isSubsetOfLanes,
   Lane,
   mergeLane,
   NoLane,
@@ -81,6 +83,7 @@ export function renderWithHooks(
       useState: updateState,
       useEffect: updateEffect,
       useTransition: updateTransition,
+      useDeferedValue: updateDeferedValue,
       useRef: updateRef,
       useMemo: updateMemo,
       useCallback: updateCallback,
@@ -91,6 +94,7 @@ export function renderWithHooks(
       useState: mountState,
       useEffect: mountEffect,
       useTransition: mountTransition,
+      useDeferedValue: mountDeferedValue,
       useRef: mountRef,
       useMemo: mountMemo,
       useCallback: mountCallback,
@@ -140,15 +144,12 @@ function mountState<T>(initialState): [T, Dispatch<T>] {
 function updateState<T>(): [T, Dispatch<T>] {
   const hook = updateWorkInProgressHook();
 
-  const { memorizedState } = hook.updateQueue.process(
-    renderLane,
-    (update) => {
-      currentRenderingFiber.lanes = mergeLane(
-        currentRenderingFiber.lanes,
-        update.lane
-      );
-    }
-  );
+  const { memorizedState } = hook.updateQueue.process(renderLane, (update) => {
+    currentRenderingFiber.lanes = mergeLane(
+      currentRenderingFiber.lanes,
+      update.lane
+    );
+  });
   // 检查state是否变化
   if (hook.updateQueue.lastRenderedState !== memorizedState) {
     markWipReceiveUpdate();
@@ -453,6 +454,30 @@ function updateCallback<T>(callback, deps) {
     hook.memorizedState = [callback, deps];
   }
   return hook.memorizedState[0];
+}
+
+/** deferedValue */
+function updateDeferedValue<T>(value: T) {
+  const hook = updateWorkInProgressHook();
+  const prevValue = hook.memorizedState;
+  // 相同 没变化，直接返回
+  if (Object.is(value, prevValue)) return value;
+  if (isSubsetOfLanes(renderLane, DeferredLane)) {
+    // 低优先级DeferedLane时
+    hook.memorizedState = value;
+    return value;
+  } else {
+    // 优先级高于Deferedlane时
+    currentRenderingFiber.lanes |= DeferredLane
+    scheduleUpdateOnFiber(currentRenderingFiber, DeferredLane);
+    return prevValue;
+  }
+}
+
+function mountDeferedValue<T>(value: T) {
+  const hook = mountWorkInProgressHook();
+  hook.memorizedState = value;
+  return hook.memorizedState;
 }
 
 /** 重置hook */
