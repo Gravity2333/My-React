@@ -32,7 +32,7 @@ export function SlowPost({ index }) {
 
 export const PostsTab = function PostsTab() {
   const items = [];
-  for (let i = 0; i < 500; i++) {
+  for (let i = 0; i < 50; i++) {
     items.push(createElement(SlowPost, {}));
   }
   return items;

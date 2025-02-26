@@ -44,11 +44,11 @@ export default function Input() {
       placeholder: "请输入内容",
     }),
     appMessage,
-    createElement(
-      "div",
-      { style: { color: "gray" } },
-      "defered:" + deferedAppMessage
-    ),
-    createElement(PostsTab, { len: deferedAppMessage.length })
+    // createElement(
+    //   "div",
+    //   { style: { color: "gray" } },
+    //   "defered:" + deferedAppMessage
+    // ),
+    // createElement(PostsTab, { len: deferedAppMessage.length })
   );
 }

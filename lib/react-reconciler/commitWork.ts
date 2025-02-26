@@ -159,7 +159,7 @@ function commitUpdate(fiber: FiberNode) {
 }
 
 /** 删除节点 */
-function commitDeletion(fiber: FiberNode, root: FiberRootNode) {
+function commitDeletion_NonRecruison(fiber: FiberNode, root: FiberRootNode) {
   const parent = getHostParent(fiber);
   if (
     (fiber.tag === HostComponent || fiber.tag === HostText) &&
@@ -180,7 +180,7 @@ function commitDeletion(fiber: FiberNode, root: FiberRootNode) {
           (hostChild.tag === HostComponent || hostChild.tag === HostText)
         ) {
           childToDelete.push(hostChild);
-   
+
           if (hostChild.tag === HostComponent) {
             // HostComponent删除的时候 需要卸载Ref
             saftyDetachRef(hostChild);
@@ -240,6 +240,45 @@ function commitDeletion(fiber: FiberNode, root: FiberRootNode) {
   }
   fiber.return = null;
   fiber.sibling = null;
+}
+
+function commitDeletion(fiber: FiberNode, root: FiberRootNode) {
+  const container = getHostParent(fiber);
+  if (container) {
+    deleteNodeFromContainer(container, fiber, root);
+  }
+}
+
+/** 递归的方式删除节点 */
+function deleteNodeFromContainer(
+  container: Container,
+  childToDelete: FiberNode,
+  root: FiberRootNode
+) {
+  if (!container || !childToDelete) return;
+  if ((childToDelete.tag === HostComponent || childToDelete.tag === HostText)&&childToDelete.stateNode!==null) {
+    /** 如果是host节点，直接删除即可 */
+    if(container.contains(childToDelete.stateNode)){
+      container.removeChild(childToDelete.stateNode);
+    }
+  
+    // 删除时，卸载Ref
+    if (childToDelete.tag === HostComponent) {
+      // HostComponent删除的时候 需要卸载Ref
+      saftyDetachRef(childToDelete);
+    }
+  } else {
+    /** 非host节点，递归删除 */
+    if (childToDelete.tag === FunctionComponent) {
+      /** 函数组件的情况下，需要收集Effect */
+      commitPassiveEffect(childToDelete, root, "unmount");
+    }
+    let deleteNodeChild = childToDelete.child;
+    while (deleteNodeChild !== null) {
+      deleteNodeFromContainer(container, deleteNodeChild, root);
+      deleteNodeChild = deleteNodeChild.sibling;
+    }
+  }
 }
 
 /** 获取HostParent
