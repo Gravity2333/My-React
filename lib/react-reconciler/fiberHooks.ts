@@ -11,7 +11,7 @@ import {
   requestUpdateLane,
 } from "./fiberLanes";
 import { Flags, PassiveEffect } from "./flags";
-import { HookHasEffect, Passive } from "./hookEffectTags";
+import { HookEffectTag, HookHasEffect, Passive } from "./hookEffectTags";
 import {
   Action,
   Dispatch,
@@ -34,7 +34,7 @@ export type EffectCallback = () => EffectCallback | void;
 
 /** 定义effect */
 export interface Effect {
-  tags: Flags;
+  tags: HookEffectTag;
   // 依赖数组
   deps: HookDeps;
   // 传入的创建effect

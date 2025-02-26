@@ -9,3 +9,5 @@
 export const Passive = 0b0010;
 // 当前hook存在effect需要处理
 export const HookHasEffect = 0b0001;
+
+export type HookEffectTag = number;
