@@ -151,7 +151,7 @@ function updateState<T>(): [T, Dispatch<T>] {
     );
   });
   // 检查state是否变化
-  if (hook.updateQueue.lastRenderedState !== memorizedState) {
+  if (!Object.is(hook.updateQueue.lastRenderedState, memorizedState)) {
     markWipReceiveUpdate();
   }
   hook.memorizedState = memorizedState;
@@ -468,7 +468,7 @@ function updateDeferedValue<T>(value: T) {
     return value;
   } else {
     // 优先级高于Deferedlane时
-    currentRenderingFiber.lanes |= DeferredLane
+    currentRenderingFiber.lanes |= DeferredLane;
     scheduleUpdateOnFiber(currentRenderingFiber, DeferredLane);
     return prevValue;
   }

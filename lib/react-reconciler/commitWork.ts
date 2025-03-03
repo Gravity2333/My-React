@@ -20,7 +20,7 @@ import {
 } from "./workTag";
 import { FCUpdateQueue } from "./updateQueue";
 import { Effect, EffectCallback } from "./fiberHooks";
-import { HookHasEffect } from "./hookEffectTags";
+import { HookEffectTag, HookHasEffect } from "./hookEffectTags";
 
 /** commit回调类型 */
 type CommitCallback = (finishedWork: FiberNode, root: FiberRootNode) => void;
@@ -265,6 +265,7 @@ function deleteNodeFromContainer(
     // 删除时，卸载Ref
     if (childToDelete.tag === HostComponent) {
       // HostComponent删除的时候 需要卸载Ref
+      
       saftyDetachRef(childToDelete);
     }
   } else {
@@ -387,7 +388,7 @@ function insertOrAppendPlacementNodeIntoConatiner(
 
 /** effect相关 遍历lastEffect 根据flags判断是否需要执行 调用callback */
 function commitHookEffectList(
-  flags: Flags,
+  flags: HookEffectTag,
   lastEffect: Effect | null,
   callback: (effect: Effect) => void
 ) {
@@ -403,7 +404,7 @@ function commitHookEffectList(
 
 /** 执行卸载的effect */
 export function commitHookEffectListUnmount(
-  flags: Flags,
+  flags: HookEffectTag,
   lastEffect: Effect | null
 ) {
   commitHookEffectList(flags, lastEffect, (effect) => {
@@ -417,7 +418,7 @@ export function commitHookEffectListUnmount(
 
 /** 执行destory的effect */
 export function commitHookEffectListDestory(
-  flags: Flags,
+  flags: HookEffectTag,
   lastEffect: Effect | null
 ) {
   commitHookEffectList(flags, lastEffect, (effect) => {
@@ -430,7 +431,7 @@ export function commitHookEffectListDestory(
 
 /** 执行创建的effect */
 export function commitHookEffectListCreate(
-  flags: Flags,
+  flags: HookEffectTag,
   lastEffect: Effect | null
 ) {
   commitHookEffectList(flags, lastEffect, (effect) => {
