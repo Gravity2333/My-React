@@ -3,6 +3,7 @@
 ## 项目简介
 
 My-React 是一个轻量级的 React 克隆实现，包含核心的 `createElement`、`useState`、`useEffect`、`useTransition` 等功能。
+具体实现说明 请见 [tutorial](./tutorial/0.概述.md)
 
 ## 主要功能
 
