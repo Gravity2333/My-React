@@ -38,15 +38,6 @@ export interface ReactElement {
   props: ReactElementProps;
 }
 
-function handleChildren(child: ReactElementChildren) {
-  if (typeof child === "string") {
-    // 子节点为文字的情况
-    return child;
-  } else {
-    // 普通节点的情况，递归调用createElement
-    return child;
-  }
-}
 
 /** 实现createElement方法 */
 export function createElement(
@@ -95,8 +86,8 @@ export function createElement(
       /** 源码这里做了处理 如果只有一个child 直接放到children 如果有多个 则children为一个数组 */
       children:
         children?.length === 1
-          ? handleChildren(children[0])
-          : children.map(handleChildren),
+          ? children[0]
+          : children,
     },
   };
 }
