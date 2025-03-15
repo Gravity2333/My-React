@@ -42,7 +42,7 @@ export interface ReactElement {
 /** 实现createElement方法 */
 export function createElement(
   type: ReactElementType,
-  props: ReactElementProps,
+  props: ReactElementProps = {},
   ...children: ReactElementChildren[]
 ): ReactElement {
   return {
@@ -79,8 +79,8 @@ export function createElement(
      *
      *
      */
-    ref: props.ref ? props.ref : null,
-    key: props.key ? String(props.key) : null,
+    ref: props?.ref ? props?.ref : null,
+    key: props?.key ? String(props?.key) : null,
     props: {
       ...props,
       /** 源码这里做了处理 如果只有一个child 直接放到children 如果有多个 则children为一个数组 */

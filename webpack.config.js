@@ -6,7 +6,7 @@ module.exports = {
     devtool: 'source-map',
     entry: './src/index.ts',
     output: {
-        path: path.resolve(__dirname, '../build'),
+        path: path.resolve(__dirname, './dist'),
         filename: "[name]-[chunkhash:8]-bundle.js",
         // publicPath: '/manager',
         assetModuleFilename: '[name]-[hash:8][ext]',

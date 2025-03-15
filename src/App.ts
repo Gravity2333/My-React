@@ -3,6 +3,7 @@ import { REACT_FRAGMENT_TYPE } from "../lib/share/ReactSymbols";
 import Counter from "./components/Counter";
 import Input from "./components/Input";
 import MemoComp from "./components/MemoComp";
+import WelcomePage from "./Pages/Welcome";
 
 async function fetchMockMessaage(): Promise<string> {
   return new Promise((resolve) => {
@@ -14,16 +15,21 @@ async function fetchMockMessaage(): Promise<string> {
 
 export function SlowPost({ index }) {
   const startTime = performance.now();
-  while (performance.now() - startTime < 4) {}
+  while (performance.now() - startTime < 4) { }
 
   return createElement(
-    "h3",
+    "div",
     {
       style: {
-        color: "#61dafb", // React 蓝色
-        fontSize: "28px",
-        fontWeight: "700",
-        marginBottom: "10px",
+        padding: "20px",
+        borderRadius: "8px",
+        backgroundColor: "#f3f3f3",
+        boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+        marginBottom: "15px",
+        fontSize: "16px",
+        fontWeight: "600",
+        color: "#333",
+        textAlign: "center",
       },
     },
     "Slow Item Render Need 4ms"
@@ -41,132 +47,162 @@ export const PostsTab = function PostsTab() {
 export default function App() {
   const [isPending, startTransition] = useTransition();
   console.log("app re");
-  const [type, setType] = useState<"counter" | "input" | "hugeData">("input");
-
-  // useEffect(() => {
-  //   console.log("app mount");
-  //   (async () => {
-  //     setAppMessage(await fetchMockMessaage())
-  //   })();
-  //   return () => {
-  //     console.log("app unmount");
-  //   };
-  // }, []);
+  const [type, setType] = useState<"welcome" | "counter" | "input" | "hugeData">("welcome");
 
   const content =
-    type === "counter"
-      ? createElement(Counter, {})
-      : type === "input"
-      ? createElement(Input, {})
-      : createElement(PostsTab, {});
-
-  // return createElement(
-  //   "div", // 最外层容器
-  //   {
-  //     style: {
-  //       display: "flex",
-  //       justifyContent: "center",
-  //       alignItems: "center",
-  //       minHeight: "100vh",
-  //       backgroundColor: "#f7f7f7", // 背景色
-  //       fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-  //       color: "#333",
-  //     },
-  //   },
-
-  //   createElement(
-  //     "div", // 创建一个卡片容器
-  //     {
-  //       style: {
-  //         backgroundColor: "#fff",
-  //         padding: "40px 50px",
-  //         borderRadius: "10px",
-  //         boxShadow: "0 15px 30px rgba(0, 0, 0, 0.1)", // 阴影效果
-  //         width: "600px",
-  //         textAlign: "center",
-  //         animation: "fadeIn 1s ease-in-out",
-  //       },
-  //     },
-  //     // 标题部分
-  //     createElement(
-  //       "h1",
-  //       {
-  //         style: {
-  //           color: "#61dafb", // React 蓝色
-  //           fontSize: "28px",
-  //           fontWeight: "700",
-  //           marginBottom: "10px",
-  //         },
-  //       },
-  //       "Welcome to MyReact Demo"
-  //     ),
-
-  //     // 描述文本
-  //     createElement(
-  //       "p",
-  //       {
-  //         style: {
-  //           color: "#666",
-  //           fontSize: "18px",
-  //           marginBottom: "30px",
-  //           lineHeight: "1.6",
-  //         },
-  //       },
-  //       "This is a simple page built using MyReact. Below are two interactive buttons."
-  //     ),
-
-  //     // 底部文本
-  //     createElement(
-  //       "p",
-  //       {
-  //         style: {
-  //           color: "#888",
-  //           fontSize: "14px",
-  //           marginTop: "30px",
-  //           fontStyle: "italic",
-  //         },
-  //       },
-  //       "Created with MyReact. Enjoy!"
-  //     )
-  //   )
-  // );
+    type === "welcome" ?
+      createElement(WelcomePage, {})
+      : type === "counter"
+        ? createElement(Counter, {})
+        : type === "input"
+          ? createElement(Input, {})
+          : createElement(PostsTab, {});
 
   return createElement(REACT_FRAGMENT_TYPE, {}, [
+    // 简洁的菜单 (横向菜单)
     createElement(
-      "button",
+      "nav",
       {
-        key: "counter-btn",
-        onClick: () => {
-          setType("counter");
-        },
+        style: navContainerStyle,
       },
-      "计数器"
+      [
+        createElement(
+          "ul",
+          {
+            style: menuStyle,
+          },
+          [
+            createElement(
+              "li",
+              {
+                key: "welcome-menu",
+                onClick: () => setType("welcome"),
+                style: menuItemStyle,
+              },
+              "Weclome"
+            ),
+            createElement(
+              "li",
+              {
+                key: "counter-menu",
+                onClick: () => setType("counter"),
+                style: menuItemStyle,
+              },
+              "计数器"
+            ),
+            createElement(
+              "li",
+              {
+                key: "input-menu",
+                onClick: () => setType("input"),
+                style: menuItemStyle,
+              },
+              "输入框"
+            ),
+            createElement(
+              "li",
+              {
+                key: "hugedata-menu",
+                onClick: () => {
+                  startTransition(() => {
+                    setType("hugeData");
+                  });
+                },
+                style: menuItemStyle,
+              },
+              "大量数据 测试useTransition"
+            ),
+          ]
+        ),
+      ]
     ),
 
+    // 内容展示区域，放置在屏幕中心，占满屏幕
     createElement(
-      "button",
+      "div",
       {
-        key: "input-btn",
-        onClick: () => {
-          setType("input");
-        },
+        style: contentContainerStyle,
       },
-      "输入框"
+      [
+        isPending ? (
+          createElement(
+            "div",
+            {
+              style: {
+                textAlign: "center",
+                fontSize: "18px",
+                color: "#888",
+                marginTop: "20px",
+              },
+            },
+            "Loading Data..."
+          )
+        ) : (
+          content
+        ),
+      ]
     ),
 
-    createElement(
-      "button",
-      {
-        key: "hugedata-btn",
-        onClick: () => {
-          startTransition(() => {
-            setType("hugeData");
-          });
-        },
-      },
-      "大量数据 测试useTransition"
-    ),
-    isPending ? "Loading Data..." : content,
-    createElement(MemoComp, {}),
+    // MemoComp 部分
+    createElement(MemoComp, { style: memoCompStyle }),
   ]);
 }
+
+// 导航菜单项样式
+const menuItemStyle = {
+  listStyle: "none",
+  padding: "10px 20px",
+  fontSize: "18px",
+  fontWeight: "500",
+  cursor: "pointer",
+  color: "#fff",
+  textTransform: "uppercase",
+  transition: "background-color 0.3s, color 0.3s",
+  margin: "0 15px",
+  borderRadius: "5px",
+  display: "inline-block", // 水平排列菜单项
+};
+
+// 菜单容器样式
+const navContainerStyle = {
+  backgroundColor: "#333", // 深色背景
+  padding: "10px 0",
+  position: "sticky",
+  top: "0",
+  zIndex: "100",
+};
+
+// 菜单样式
+const menuStyle = {
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  margin: "0",
+  padding: "0",
+};
+
+// 内容区域样式 - 居中且占满屏幕
+const contentContainerStyle = {
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "stretch",
+  height: 'calc( 100% - 93px )',
+  backgroundColor: "#f5f5f5", // 背景色可以设置为浅灰色或自定义
+  fontFamily: "'Arial', sans-serif",
+  overflow: 'auto',
+};
+
+// MemoComp 样式
+const memoCompStyle = {
+  padding: "20px",
+  marginTop: "30px",
+  backgroundColor: "#f9f9f9",
+  borderRadius: "8px",
+  boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+};
+
+// Hover 动画 (菜单项悬停效果)
+menuItemStyle[':hover'] = {
+  backgroundColor: "#4CAF50", // 按钮背景色悬停变化
+  color: "#fff", // 文字颜色悬停变化
+};
