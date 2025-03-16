@@ -79,7 +79,7 @@ export default function App() {
                 onClick: () => setType("welcome"),
                 style: menuItemStyle,
               },
-              "Weclome"
+              "Welcome"
             ),
             createElement(
               "li",

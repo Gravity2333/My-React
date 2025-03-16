@@ -3788,7 +3788,7 @@ function App() {
                     key: "welcome-menu",
                     onClick: function () { return setType("welcome"); },
                     style: menuItemStyle,
-                }, "Weclome"),
+                }, "Welcome"),
                 (0, react_1.createElement)("li", {
                     key: "counter-menu",
                     onClick: function () { return setType("counter"); },
@@ -4247,4 +4247,4 @@ root.render((0, react_1.createElement)(App_1.default, {}));
 
 /******/ })()
 ;
-//# sourceMappingURL=main-69897a58-bundle.js.map
+//# sourceMappingURL=main-cf087f9b-bundle.js.map
