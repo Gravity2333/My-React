@@ -1,5 +1,6 @@
 import { Action, Dispatch } from "../react-reconciler/updateQueue";
 import { EffectCallback, HookDeps } from "../react-reconciler/fiberHooks";
+import { Context } from "./context";
 
 export interface Dispatcher {
   useState: <T>(initialState: T | (() => T)) => [T, Dispatch<T>];
@@ -9,6 +10,7 @@ export interface Dispatcher {
   useRef: <T>(initialValue: T) => { current: T };
   useMemo: <T>(nextCreate: () => T, deps: HookDeps) => T;
   useCallback: <T>(callback: T, deps: HookDeps) => T;
+  useContext: <T>(context: Context<T>) => T;
 }
 
 /** 共享的 当前的Dispatcher */

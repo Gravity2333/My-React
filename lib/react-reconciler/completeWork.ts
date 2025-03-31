@@ -2,6 +2,7 @@ import { FiberNode } from "./fiber";
 import { NoFlags, Ref, Update } from "./flags";
 import { updateFiberProps } from "../events/SyntheticEvent";
 import {
+  ContextProvider,
   Fragment,
   FunctionComponent,
   HostComponent,
@@ -10,6 +11,7 @@ import {
   MemoComponent,
 } from "./workTag";
 import { NoLane } from "./fiberLanes";
+import { popContext } from "./fiberContext";
 
 /** 归的过程 主要逻辑有
  * 1. 不能复用的DOM创建 赋给stateNode
@@ -28,11 +30,11 @@ export function completeWork(wip: FiberNode) {
         // update
         if (currentFiber.ref !== wip.ref) {
           wip.flags |= Ref;
-				}
+        }
         // 检查pendingProps和memroizedProps 如何不同则打上Update更新标签
         // if (pendingProps !== wip.memorizedProps) {
         //   wip.flags |= Update;
-        // }  
+        // }
         // 不要这样写 会导致事件处理函数的闭包陷阱 我们需要在每次更新的时候 update新的event
         wip.flags |= Update;
       } else {
@@ -61,6 +63,11 @@ export function completeWork(wip: FiberNode) {
         const textInstance = document.createTextNode(pendingProps?.content);
         wip.stateNode = textInstance;
       }
+      bubbleProperties(wip);
+      return null;
+    case ContextProvider:
+      // pop Context
+      popContext(wip.type._context);
       bubbleProperties(wip);
       return null;
     case HostRoot:

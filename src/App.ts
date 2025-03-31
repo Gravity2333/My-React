@@ -3,6 +3,7 @@ import { REACT_FRAGMENT_TYPE } from "../lib/share/ReactSymbols";
 import Counter from "./components/Counter";
 import Input from "./components/Input";
 import MemoComp from "./components/MemoComp";
+import ContextDemo from "./Pages/ContextDemo";
 import WelcomePage from "./Pages/Welcome";
 
 async function fetchMockMessaage(): Promise<string> {
@@ -15,7 +16,7 @@ async function fetchMockMessaage(): Promise<string> {
 
 export function SlowPost({ index }) {
   const startTime = performance.now();
-  while (performance.now() - startTime < 4) { }
+  while (performance.now() - startTime < 4) {}
 
   return createElement(
     "div",
@@ -47,16 +48,20 @@ export const PostsTab = function PostsTab() {
 export default function App() {
   const [isPending, startTransition] = useTransition();
   console.log("app re");
-  const [type, setType] = useState<"welcome" | "counter" | "input" | "hugeData">("welcome");
+  const [type, setType] = useState<
+    "welcome" | "counter" | "input" | "hugeData" | "context"
+  >("welcome");
 
   const content =
-    type === "welcome" ?
-      createElement(WelcomePage, {})
+    type === "welcome"
+      ? createElement(WelcomePage, {})
       : type === "counter"
-        ? createElement(Counter, {})
-        : type === "input"
-          ? createElement(Input, {})
-          : createElement(PostsTab, {});
+      ? createElement(Counter, {})
+      : type === "input"
+      ? createElement(Input, {})
+      : type === "context"
+      ? createElement(ContextDemo, {})
+      : createElement(PostsTab, {});
 
   return createElement(REACT_FRAGMENT_TYPE, {}, [
     // 简洁的菜单 (横向菜单)
@@ -112,6 +117,19 @@ export default function App() {
               },
               "大量数据 测试useTransition"
             ),
+            createElement(
+              "li",
+              {
+                key: "context-menu",
+                onClick: () => {
+                  startTransition(() => {
+                    setType("context");
+                  });
+                },
+                style: menuItemStyle,
+              },
+              "测试Context"
+            ),
           ]
         ),
       ]
@@ -124,22 +142,20 @@ export default function App() {
         style: contentContainerStyle,
       },
       [
-        isPending ? (
-          createElement(
-            "div",
-            {
-              style: {
-                textAlign: "center",
-                fontSize: "18px",
-                color: "#888",
-                marginTop: "20px",
+        isPending
+          ? createElement(
+              "div",
+              {
+                style: {
+                  textAlign: "center",
+                  fontSize: "18px",
+                  color: "#888",
+                  marginTop: "20px",
+                },
               },
-            },
-            "Loading Data..."
-          )
-        ) : (
-          content
-        ),
+              "Loading Data..."
+            )
+          : content,
       ]
     ),
 
@@ -186,10 +202,10 @@ const contentContainerStyle = {
   display: "flex",
   justifyContent: "center",
   alignItems: "stretch",
-  height: 'calc( 100% - 93px )',
+  height: "calc( 100% - 93px )",
   backgroundColor: "#f5f5f5", // 背景色可以设置为浅灰色或自定义
   fontFamily: "'Arial', sans-serif",
-  overflow: 'auto',
+  overflow: "auto",
 };
 
 // MemoComp 样式
@@ -202,7 +218,7 @@ const memoCompStyle = {
 };
 
 // Hover 动画 (菜单项悬停效果)
-menuItemStyle[':hover'] = {
+menuItemStyle[":hover"] = {
   backgroundColor: "#4CAF50", // 按钮背景色悬停变化
   color: "#fff", // 文字颜色悬停变化
 };

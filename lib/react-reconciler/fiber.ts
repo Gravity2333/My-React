@@ -7,9 +7,14 @@ import {
   ReactElementType,
   Ref,
 } from "../react";
-import { REACT_FRAGMENT_TYPE, REACT_MEMO_TYPE } from "../share/ReactSymbols";
+import {
+  REACT_FRAGMENT_TYPE,
+  REACT_MEMO_TYPE,
+  REACT_PROVIDER_TYPE,
+} from "../share/ReactSymbols";
 import { UpdateQueue } from "./updateQueue";
 import {
+  ContextProvider,
   Fragment,
   FunctionComponent,
   HostComponent,
@@ -209,6 +214,11 @@ export function createFiberFromElement(element: ReactElement): FiberNode {
       case REACT_MEMO_TYPE:
         // 设置memo类型的fiberTag
         fiberTag = MemoComponent;
+        break;
+      case REACT_PROVIDER_TYPE:
+        // 设置Context.Provider类型的FiberTag
+        fiberTag = ContextProvider;
+        break;
     }
   } else if (element.type === REACT_FRAGMENT_TYPE) {
     fiberTag = Fragment;

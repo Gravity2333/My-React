@@ -6,6 +6,7 @@
 
 import { EffectCallback, HookDeps } from "../react-reconciler/fiberHooks";
 import { REACT_ELEMENT_TYPE } from "../share/ReactSymbols";
+import { Context } from "./context";
 import { currentDispatcher, resolveDispatcher } from "./currentDispatcher";
 
 export type ReactElementType = any;
@@ -37,7 +38,6 @@ export interface ReactElement {
   type: ReactElementType;
   props: ReactElementProps;
 }
-
 
 /** 实现createElement方法 */
 export function createElement(
@@ -84,10 +84,7 @@ export function createElement(
     props: {
       ...props,
       /** 源码这里做了处理 如果只有一个child 直接放到children 如果有多个 则children为一个数组 */
-      children:
-        children?.length === 1
-          ? children[0]
-          : children,
+      children: children?.length === 1 ? children[0] : children,
     },
   };
 }
@@ -128,4 +125,9 @@ export function useCallback<T>(callback: T, deps: HookDeps) {
   return dispatcher.useCallback<T>(callback, deps);
 }
 
-export * from './memo'
+export function useContext<T>(context: Context<T>) {
+  const dispatcher = resolveDispatcher();
+  return dispatcher.useContext<T>(context);
+}
+
+export * from "./memo";

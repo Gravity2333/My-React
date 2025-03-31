@@ -1,6 +1,8 @@
+import { Context } from "../react/context";
 import { currentDispatcher } from "../react/currentDispatcher";
 import { markWipReceiveUpdate } from "./beginwork";
 import { FiberNode } from "./fiber";
+import { readContextImpl } from "./fiberContext";
 import {
   DeferredLane,
   isSubsetOfLanes,
@@ -87,6 +89,7 @@ export function renderWithHooks(
       useRef: updateRef,
       useMemo: updateMemo,
       useCallback: updateCallback,
+      useContext: readContext,
     };
   } else {
     // mount
@@ -98,6 +101,7 @@ export function renderWithHooks(
       useRef: mountRef,
       useMemo: mountMemo,
       useCallback: mountCallback,
+      useContext: readContext,
     };
   }
 
@@ -478,6 +482,12 @@ function mountDeferedValue<T>(value: T) {
   const hook = mountWorkInProgressHook();
   hook.memorizedState = value;
   return hook.memorizedState;
+}
+
+// context不会在memorizedState上记录数据
+function readContext<T>(context: Context<T>) {
+  const consumer = currentRenderingFiber;
+  return readContextImpl<T>(consumer, context);
 }
 
 /** 重置hook */

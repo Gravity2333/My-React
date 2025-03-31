@@ -6,6 +6,7 @@ import {
 import { FiberNode } from "./fiber";
 import { ReactElementChildren } from "../react";
 import {
+  ContextProvider,
   Fragment,
   FunctionComponent,
   HostComponent,
@@ -17,6 +18,7 @@ import { bailoutHook, renderWithHooks } from "./fiberHooks";
 import { includeSomeLanes, Lane, NoLane } from "./fiberLanes";
 import { Ref } from "./flags";
 import shallowEqual from "../utils/shallowEqual";
+import { pushContext } from "./fiberContext";
 
 /** 是否收到更新 默认为false 即没有更新 开启bailout */
 let didReceiveUpdate: boolean = false;
@@ -86,6 +88,8 @@ export function beginWork(wip: FiberNode, renderLane: Lane): FiberNode | null {
       return null;
     case FunctionComponent:
       return updateFunctionComponent(wip, wip.type as Function, renderLane);
+    case ContextProvider:
+      return updateContextProvider(wip, renderLane);
     default:
       console.warn("beginWork未实现的类型", wip.tag);
       break;
@@ -253,4 +257,21 @@ function updateMemoComponent(wip: FiberNode, renderLane: Lane) {
   // 如果不能bailout 执行函数
   const Component = (wip.type as any).type;
   return updateFunctionComponent(wip, Component, renderLane);
+}
+
+/** 更新ContextProvider */
+function updateContextProvider(wip: FiberNode, renderLane: Lane) {
+  const context = wip.type._context;
+  const memorizedProps = wip.memorizedProps;
+  const pendingProps = wip.pendingProps;
+  const newValue = pendingProps.value;
+
+  // 推入Context
+  pushContext(context, newValue);
+
+  // TODO bailout逻辑
+
+  // reconcile child
+  reconcileChildren(wip, pendingProps.children);
+  return wip.child;
 }
