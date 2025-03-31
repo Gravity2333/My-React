@@ -18,7 +18,11 @@ import { bailoutHook, renderWithHooks } from "./fiberHooks";
 import { includeSomeLanes, Lane, NoLane } from "./fiberLanes";
 import { Ref } from "./flags";
 import shallowEqual from "../utils/shallowEqual";
-import { pushContext } from "./fiberContext";
+import {
+  prepareToReadContext,
+  propagateContextChange,
+  pushContext,
+} from "./fiberContext";
 
 /** 是否收到更新 默认为false 即没有更新 开启bailout */
 let didReceiveUpdate: boolean = false;
@@ -61,9 +65,13 @@ export function beginWork(wip: FiberNode, renderLane: Lane): FiberNode | null {
       didReceiveUpdate = true;
     } else {
       // 如果props和type都检查通过 检查state和context TODO
-      if (!checkUpdate(wip, renderLane)) {
+      if (!checkUpdateOrContext(wip, renderLane)) {
         // 进入bailout
         didReceiveUpdate = false;
+        // 这地方一定要加context的判读，即使bailout 也需要pushContext
+        if (wip.tag === ContextProvider) {
+          pushContext(wip.type._context, wip.pendingProps.value);
+        }
         return bailoutOnAlreadyFinishedWork(wip, renderLane);
       }
     }
@@ -98,7 +106,7 @@ export function beginWork(wip: FiberNode, renderLane: Lane): FiberNode | null {
 }
 
 /** 检查是否存在更新 即检查wip.lanes 是否包含当前renderLane */
-function checkUpdate(wip: FiberNode, renderLane: Lane) {
+function checkUpdateOrContext(wip: FiberNode, renderLane: Lane) {
   // 注意 这里不要用wip.lanes直接检查，因为checkUpdate 也会在 wip.lanes = NoLane 之后调用，比如Memo中
   // 此时wip.lanes可能为NoLane 所以需要使用在enqueueUpdate中同步的 current.lanes
   const current = wip.alternate;
@@ -187,6 +195,8 @@ function updateFunctionComponent(
   Component: Function,
   renderLane: Lane
 ): FiberNode {
+  /** 重制dependencies信息 */
+  prepareToReadContext(wip, renderLane);
   // renderWithHooks 中检查，如果状态改变 则置didReceiveUpdate = true
   const nextChildElement = renderWithHooks(wip, Component, renderLane);
   if (wip.alternate !== null && !didReceiveUpdate) {
@@ -241,7 +251,7 @@ function updateMemoComponent(wip: FiberNode, renderLane: Lane) {
 
     if (compare(oldProps, newProps)) {
       // 判断state context
-      if (!checkUpdate(wip, renderLane)) {
+      if (!checkUpdateOrContext(wip, renderLane)) {
         // 需要bailout
         didReceiveUpdate = false;
         // 重置props 注意 这里的oldProps newProps地址不一定一样
@@ -264,12 +274,22 @@ function updateContextProvider(wip: FiberNode, renderLane: Lane) {
   const context = wip.type._context;
   const memorizedProps = wip.memorizedProps;
   const pendingProps = wip.pendingProps;
-  const newValue = pendingProps.value;
-
+  const newValue = pendingProps?.value;
+  const oldValue = memorizedProps?.value;
   // 推入Context
   pushContext(context, newValue);
 
   // TODO bailout逻辑
+  if (
+    Object.is(oldValue, newValue) &&
+    memorizedProps.children === pendingProps.children
+  ) {
+    /** 两次value相等 并且children不能变化，children变化 哪怕value不变 也要更新下面的Fiber */
+    return bailoutOnAlreadyFinishedWork(wip, renderLane);
+  } else {
+    /** 传播Context变化 */
+    propagateContextChange(wip, context, renderLane);
+  }
 
   // reconcile child
   reconcileChildren(wip, pendingProps.children);

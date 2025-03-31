@@ -1,4 +1,4 @@
-import { createElement, useContext } from "../../../lib/react";
+import { createElement, useContext, useState } from "../../../lib/react";
 import createContext from "../../../lib/react/context";
 import { REACT_FRAGMENT_TYPE } from "../../../lib/share/ReactSymbols";
 
@@ -61,6 +61,122 @@ function ContextReader({ title }: { title: string }) {
   );
 }
 
+function Provider1Component({ children }: { children: any }) {
+  return createElement(
+    "div",
+    {
+      style: { backgroundColor: "lightblue", width: "550px" },
+    },
+    [
+      createElement(
+        "h3",
+        {
+          style: {
+            color: "white",
+            textAlign: "center",
+          },
+        },
+        "Provider1"
+      ),
+      createElement(
+        Context1.Provider,
+        {
+          value: "PROVIDER1 NEW VALUE",
+        },
+        [
+          createElement(ContextReader, {
+            title: "Provider1内层Context结果",
+          }),
+          children,
+        ]
+      ),
+    ]
+  );
+}
+
+function Provider2Component({ children }: { children: any }) {
+  const [provider2Value,setProvider2Value] = useState<string>("PROVIDER2 NEW VALUE",)
+  return createElement(
+    "div",
+    {
+      style: { backgroundColor: "lightgray", width: "500px" },
+    },
+    [
+      createElement(
+        "h3",
+        {
+          style: {
+            color: "white",
+            textAlign: "center",
+          },
+        },
+        "Provider2"
+      ),
+      createElement(
+        "button",
+        {
+          style: {
+            backgroundColor: 'red',
+            cursor:'pointer'
+          },
+          onClick: ()=>{
+            setProvider2Value(`当前时间为: ${new Date()}`)
+          }
+        },
+        "点击修改Provider2 value"
+      ),
+      createElement(
+        Context2.Provider,
+        {
+          value: provider2Value
+        },
+        [
+          createElement(ContextReader, {
+            title: "Provider2内层Context结果",
+          }),
+          children,
+        ]
+      ),
+    ]
+  );
+}
+
+function Provider3Component({ children }: { children: any }) {
+  return createElement(
+    "div",
+    {
+      style: {
+        backgroundColor: "lightgreen",
+        width: "400px",
+      },
+    },
+    [
+      createElement(
+        "h3",
+        {
+          style: {
+            color: "white",
+            textAlign: "center",
+          },
+        },
+        "Provider3"
+      ),
+      createElement(
+        Context3.Provider,
+        {
+          value: "PROVIDER3 NEW VALUE",
+        },
+        [
+          createElement(ContextReader, {
+            title: "最内层Context结果",
+          }),
+          children,
+        ]
+      ),
+    ]
+  );
+}
+
 export default function ContextDemo() {
   return createElement(REACT_FRAGMENT_TYPE, {}, [
     createElement(
@@ -72,96 +188,11 @@ export default function ContextDemo() {
         createElement(ContextReader, {
           title: "最外层Context结果",
         }),
-        createElement(
-          "div",
-          {
-            style: { backgroundColor: "lightblue", width: "550px" },
-          },
-          [
-            createElement(
-              "h3",
-              {
-                style: {
-                  color: "white",
-                  textAlign: "center",
-                },
-              },
-              "Provider1"
-            ),
-            createElement(
-              Context1.Provider,
-              {
-                value: "PROVIDER1 NEW VALUE",
-              },
-              [
-                createElement(ContextReader, {
-                  title: "Provider1内层Context结果",
-                }),
-                createElement(
-                  "div",
-                  {
-                    style: { backgroundColor: "lightgray", width: "500px" },
-                  },
-                  [
-                    createElement(
-                      "h3",
-                      {
-                        style: {
-                          color: "white",
-                          textAlign: "center",
-                        },
-                      },
-                      "Provider2"
-                    ),
-                    createElement(
-                      Context2.Provider,
-                      {
-                        value: "PROVIDER2 NEW VALUE",
-                      },
-                      [
-                        createElement(ContextReader, {
-                          title: "Provider1内层Context结果",
-                        }),
-                        createElement(
-                          "div",
-                          {
-                            style: {
-                              backgroundColor: "lightgreen",
-                              width: "400px",
-                            },
-                          },
-                          [
-                            createElement(
-                              "h3",
-                              {
-                                style: {
-                                  color: "white",
-                                  textAlign: "center",
-                                },
-                              },
-                              "Provider3"
-                            ),
-                            createElement(
-                              Context3.Provider,
-                              {
-                                value: "PROVIDER3 NEW VALUE",
-                              },
-                              [
-                                createElement(ContextReader, {
-                                  title: "最内层Context结果",
-                                }),
-                              ]
-                            ),
-                          ]
-                        ),
-                      ]
-                    ),
-                  ]
-                ),
-              ]
-            ),
-          ]
-        ),
+        createElement(Provider1Component, {}, [
+          createElement(Provider2Component, {}, [
+            createElement(Provider3Component, {}),
+          ]),
+        ]),
       ]
     ),
   ]);

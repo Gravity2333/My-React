@@ -23,10 +23,20 @@ import {
 } from "./workTag";
 import { Effect } from "./fiberHooks";
 import { Lane, Lanes, NoLane, NoLanes } from "./fiberLanes";
+import { ContextItem } from "./fiberContext";
 
 export type Container = Element;
 export type Instance = Element;
 export type TextInstance = Text;
+
+/** 记录当前Fiber对象依赖的Context
+ *   firstContext 依赖的第一个Context
+ *   lanes 所有依赖context对应更新的
+ */
+export type Dependencies<T> = {
+  firstContext: ContextItem<T>;
+  lanes: Lanes;
+};
 
 export interface PendingPassiveEffect {
   // 更新的effect
@@ -76,6 +86,8 @@ export class FiberNode {
   lanes: Lanes;
   /** 当前fiber的子fiber树上的优先级 */
   childLanes: Lanes;
+  /** Fiber依赖的Context */
+  dependencies: Dependencies<any>;
 
   constructor(tag: WorkTag, pendingProps: ReactElementProps, key: Key) {
     // 没传key的情况下 都是null 在Diff reconcileArray的时候 会使用index
@@ -105,6 +117,8 @@ export class FiberNode {
     /** lanes相关 */
     this.lanes = NoLanes;
     this.childLanes = NoLanes;
+
+    this.dependencies = null;
   }
 }
 
@@ -194,6 +208,12 @@ export function createWorkInProgress(
   /** 注意复用的时候 一定要把lane拷贝过去 */
   wip.lanes = currentFiber.lanes;
   wip.childLanes = currentFiber.childLanes;
+  /** 需要拷贝dependencies */
+  wip.dependencies = currentFiber.dependencies
+    ? {
+        ...currentFiber.dependencies,
+      }
+    : null;
   return wip;
 }
 
