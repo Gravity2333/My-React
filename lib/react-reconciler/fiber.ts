@@ -240,7 +240,7 @@ export function createFiberFromElement(element: ReactElement): FiberNode {
         fiberTag = ContextProvider;
         break;
     }
-  } else if (element.type === REACT_FRAGMENT_TYPE) {
+  } else if (element.type === REACT_FRAGMENT_TYPE || element.type === void 0) {
     fiberTag = Fragment;
     return createFiberFromFragment(element.props.children, element.key);
   }

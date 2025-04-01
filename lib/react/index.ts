@@ -131,3 +131,17 @@ export function useContext<T>(context: Context<T>) {
 }
 
 export * from "./memo";
+
+const React = {
+  createElement,
+  useState,
+  useEffect,
+  useTransition,
+  useDeferedValue,
+  useCallback,
+  useContext,
+  useRef,
+  useMemo,
+}
+
+export default React

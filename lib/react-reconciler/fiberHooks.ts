@@ -1,5 +1,6 @@
 import { Context } from "../react/context";
 import { currentDispatcher } from "../react/currentDispatcher";
+import { TRANSITION_CONFIG } from "../share/transition";
 import { markWipReceiveUpdate } from "./beginwork";
 import { FiberNode } from "./fiber";
 import { readContextImpl } from "./fiberContext";
@@ -56,8 +57,6 @@ let workInProgressHook: Hook | null = null;
 let currentHook: Hook | null = null;
 // 需要注意 wipxxx都是当前处理fiber tree上的 current都是当前已经渲染的fiber tre上的属性
 let renderLane: Lane = NoLane;
-// 导出共享变量
-export let isTransition = false;
 
 /** 运行函数组件以及hooks */
 export function renderWithHooks(
@@ -398,17 +397,17 @@ function startTransition(setPending: Dispatch<boolean>, callback: () => void) {
   // 开始transition 第一次更新 此时优先级高
   setPending(true);
   // transition过程，下面的优先级低
-  const prevTransition = isTransition;
+  const prevTransition = TRANSITION_CONFIG.isTransition;
 
   // 设置标记 表示处于transition过程中，在fiberHook.ts/requestUpdateLane会判断这个变量，如果true则返回transtionLane
-  isTransition = true;
+  TRANSITION_CONFIG.isTransition = true;
   // 设置标记 （在react原版中 这里是 1）
   // 第二次更新 优先级低
   callback();
   // 第三次更新 重新设置pending 优先级低
   setPending(false);
   // 恢复isTransition
-  isTransition = prevTransition;
+  TRANSITION_CONFIG.isTransition = prevTransition;
 }
 
 /** 挂载Ref */

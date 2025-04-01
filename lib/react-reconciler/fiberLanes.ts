@@ -1,8 +1,9 @@
 /** 实现车道模型优先级 */
 
 import scheduler, { PriorityLevel } from "../scheduler";
-import { FiberRootNode } from "./fiber";
-import { isTransition } from "./fiberHooks";
+import { TRANSITION_CONFIG } from "../share/transition";
+import type { FiberRootNode } from "./fiber";
+
 /** 单车道 */
 export type Lane = number;
 /** 多车道 （优先级合集） */
@@ -190,7 +191,7 @@ export function lanesToSchedulerPriority(lanes: Lanes): PriorityLevel {
  * 比如 setState在effect中触发和在onclick中触发 有不一样的优先级
  */
 export function requestUpdateLane(): Lane {
-  if (isTransition) {
+  if (TRANSITION_CONFIG.isTransition) {
     return TransitionLane;
   }
   const currentUpdateLane = schedulerPriorityToLane(

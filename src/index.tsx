@@ -1,6 +1,7 @@
-import { createElement } from "../lib/react";
+import React, { createElement } from "../lib/react";
 import { createRoot } from "../lib/react-dom";
 import App from "./App";
 
 const root = createRoot(document.querySelector("#root-master"));
-root.render(createElement(App, {}));
+console.log(<></>)
+root.render(<App/>);

@@ -12,6 +12,11 @@
   "author": "Gravity2333",
   "license": "ISC",
   "devDependencies": {
+    "@babel/core": "^7.26.10",
+    "@babel/preset-env": "^7.26.9",
+    "@babel/preset-react": "^7.26.3",
+    "@babel/preset-typescript": "^7.27.0",
+    "babel-loader": "^10.0.0",
     "html-webpack-plugin": "^5.6.0",
     "ts-loader": "^9.5.1",
     "webpack": "^5.91.0",
@@ -19,6 +24,7 @@
     "webpack-dev-server": "^5.0.4"
   },
   "dependencies": {
+    "babel": "^6.23.0",
     "typescript": "^5.7.3"
   }
 }
