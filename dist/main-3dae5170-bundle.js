@@ -133,7 +133,17 @@ function useContext(context) {
   return dispatcher.useContext(context);
 }
 
-const React = {};
+const React = {
+  createElement,
+  useState,
+  useEffect,
+  useTransition,
+  useDeferedValue,
+  useCallback,
+  useContext,
+  useRef,
+  useMemo
+};
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (React);
 
 /***/ }),
@@ -213,8 +223,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _events_SyntheticEvent__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(6);
 /* harmony import */ var _react_reconciler_fiber__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(10);
-/* harmony import */ var _react_reconciler_updateQueue__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(20);
-/* harmony import */ var _react_reconciler_workLoop__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(21);
+/* harmony import */ var _react_reconciler_updateQueue__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(15);
+/* harmony import */ var _react_reconciler_workLoop__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(16);
 /* harmony import */ var _react_reconciler_workTag__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(12);
 /* harmony import */ var _react_reconciler_fiberLanes__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(13);
 /* harmony import */ var _scheduler__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(8);
@@ -1346,7 +1356,7 @@ function createFiberFromElement(element) {
         fiberTag = _workTag__WEBPACK_IMPORTED_MODULE_2__.ContextProvider;
         break;
     }
-  } else if (element.type === _share_ReactSymbols__WEBPACK_IMPORTED_MODULE_1__.REACT_FRAGMENT_TYPE) {
+  } else if (element.type === _share_ReactSymbols__WEBPACK_IMPORTED_MODULE_1__.REACT_FRAGMENT_TYPE || element.type === void 0) {
     fiberTag = _workTag__WEBPACK_IMPORTED_MODULE_2__.Fragment;
     return createFiberFromFragment(element.props.children, element.key);
   }
@@ -1470,8 +1480,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   schedulerPriorityToLane: () => (/* binding */ schedulerPriorityToLane)
 /* harmony export */ });
 /* harmony import */ var _scheduler__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(8);
-/* harmony import */ var _fiberHooks__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(14);
+/* harmony import */ var _share_transition__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(14);
 /** 实现车道模型优先级 */
+
 
 
 
@@ -1648,7 +1659,7 @@ function lanesToSchedulerPriority(lanes) {
  * 比如 setState在effect中触发和在onclick中触发 有不一样的优先级
  */
 function requestUpdateLane() {
-  if (_fiberHooks__WEBPACK_IMPORTED_MODULE_1__.isTransition) {
+  if (_share_transition__WEBPACK_IMPORTED_MODULE_1__.TRANSITION_CONFIG.isTransition) {
     return TransitionLane;
   }
   const currentUpdateLane = schedulerPriorityToLane(_scheduler__WEBPACK_IMPORTED_MODULE_0__["default"].getCurrentPriorityLevel());
@@ -1661,439 +1672,12 @@ function requestUpdateLane() {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   bailoutHook: () => (/* binding */ bailoutHook),
-/* harmony export */   isTransition: () => (/* binding */ isTransition),
-/* harmony export */   renderWithHooks: () => (/* binding */ renderWithHooks)
+/* harmony export */   TRANSITION_CONFIG: () => (/* binding */ TRANSITION_CONFIG)
 /* harmony export */ });
-/* harmony import */ var _react_currentDispatcher__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(3);
-/* harmony import */ var _beginwork__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(15);
-/* harmony import */ var _fiberContext__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(18);
-/* harmony import */ var _fiberLanes__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(13);
-/* harmony import */ var _flags__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(11);
-/* harmony import */ var _hookEffectTags__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(19);
-/* harmony import */ var _updateQueue__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(20);
-/* harmony import */ var _workLoop__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(21);
-
-
-
-
-
-
-
-
-
-/** 定义Hook类型 */
-
-/** 定义effect */
-
-/** 定义一些全局变量 */
-/** 当前正在渲染的hook */
-let currentRenderingFiber = null;
-/** 当前正在处理的HOOK */
-let workInProgressHook = null;
-/** currentHook current fiber和当前workInProgressHook对应的hook */
-let currentHook = null;
-// 需要注意 wipxxx都是当前处理fiber tree上的 current都是当前已经渲染的fiber tre上的属性
-let renderLane = _fiberLanes__WEBPACK_IMPORTED_MODULE_3__.NoLane;
 // 导出共享变量
-let isTransition = false;
-
-/** 运行函数组件以及hooks */
-function renderWithHooks(wip, Component, lane) {
-  // 主要作用是，运行函数组件 并且在函数运行上下文挂载currentDispatcher 在运行之后 卸载Dispatcher
-  // 保证hook只能在函数组件内运行
-
-  // 设置当前正在渲染的fiber
-  currentRenderingFiber = wip;
-
-  // 清空memoizedState
-  wip.memorizedState = null;
-  // 重置 effect链表
-  wip.updateQueue = null;
-
-  // 当前已经渲染的fiber
-  const current = wip.alternate;
-  renderLane = lane;
-  if (current !== null) {
-    // update
-    _react_currentDispatcher__WEBPACK_IMPORTED_MODULE_0__.currentDispatcher.current = {
-      useState: updateState,
-      useEffect: updateEffect,
-      useTransition: updateTransition,
-      useDeferedValue: updateDeferedValue,
-      useRef: updateRef,
-      useMemo: updateMemo,
-      useCallback: updateCallback,
-      useContext: readContext
-    };
-  } else {
-    // mount
-    _react_currentDispatcher__WEBPACK_IMPORTED_MODULE_0__.currentDispatcher.current = {
-      useState: mountState,
-      useEffect: mountEffect,
-      useTransition: mountTransition,
-      useDeferedValue: mountDeferedValue,
-      useRef: mountRef,
-      useMemo: mountMemo,
-      useCallback: mountCallback,
-      useContext: readContext
-    };
-  }
-
-  // 运行函数
-  const pendingProps = wip.pendingProps;
-  const childrenElements = Component(pendingProps);
-
-  // 恢复
-  currentRenderingFiber = null;
-  workInProgressHook = null;
-  currentHook = null;
-  _react_currentDispatcher__WEBPACK_IMPORTED_MODULE_0__.currentDispatcher.current = null;
-  renderLane = _fiberLanes__WEBPACK_IMPORTED_MODULE_3__.NoLane;
-  return childrenElements;
-}
-
-/** 挂载state */
-function mountState(initialState) {
-  const hook = mountWorkInProgressHook();
-  let memorizedState;
-  // 计算初始值
-  if (typeof initialState === "function") {
-    memorizedState = initialState();
-  } else {
-    memorizedState = initialState;
-  }
-
-  // 挂载memorizedState到hook 注意别挂载错了 currentRenderingFiber 也有一样的memorizedState
-  hook.memorizedState = memorizedState;
-  // 设置hook.taskQueue.dispatch 并且返回,注意dispatch是可以拿到函数组件外部使用的，所以这里需要绑定当前渲染fiber和updateQueue
-  hook.updateQueue.dispatch = dispatchSetState.bind(null, currentRenderingFiber, hook.updateQueue);
-  hook.updateQueue.baseState = memorizedState;
-  // 保存上一次的值
-  hook.updateQueue.lastRenderedState = memorizedState;
-  return [memorizedState, hook.updateQueue.dispatch];
-}
-
-/** 更新state */
-function updateState() {
-  const hook = updateWorkInProgressHook();
-  const {
-    memorizedState
-  } = hook.updateQueue.process(renderLane, update => {
-    currentRenderingFiber.lanes = (0,_fiberLanes__WEBPACK_IMPORTED_MODULE_3__.mergeLane)(currentRenderingFiber.lanes, update.lane);
-  });
-  // 检查state是否变化
-  if (!Object.is(hook.updateQueue.lastRenderedState, memorizedState)) {
-    (0,_beginwork__WEBPACK_IMPORTED_MODULE_1__.markWipReceiveUpdate)();
-  }
-  hook.memorizedState = memorizedState;
-  hook.updateQueue.lastRenderedState = memorizedState;
-  return [memorizedState, hook.updateQueue.dispatch];
-}
-
-/** 挂载当前的workInProgressHook 并且返回 */
-function mountWorkInProgressHook() {
-  if (!currentRenderingFiber) {
-    throw new Error("hooks必须在函数组件内部调用！");
-  }
-  const hook = {
-    memorizedState: null,
-    updateQueue: new _updateQueue__WEBPACK_IMPORTED_MODULE_6__.UpdateQueue(),
-    next: null
-  };
-
-  // hook的挂载方式是 currentRenderdingFiber.memorizedState -> hook1 -next-> hook2 -next-> hook3 -next-> null
-  if (currentRenderingFiber.memorizedState === null) {
-    // 第一次挂载
-    currentRenderingFiber.memorizedState = hook;
-  } else {
-    // 非第一次挂载
-    workInProgressHook.next = hook;
-  }
-  // 设置workInProgressHook
-  workInProgressHook = hook;
-  return hook;
-}
-
-/** 根据current 挂载当前的workInProgressHook 并且返回 */
-function updateWorkInProgressHook() {
-  if (!currentRenderingFiber) {
-    throw new Error("hooks必须在函数组件内部调用！");
-  }
-
-  // 找到当前已经渲染的fiber -> current
-  const current = currentRenderingFiber.alternate;
-
-  // currentHook是指向current元素的hook指针
-  if (currentHook === null) {
-    // 当前还没有currentHook 第一个元素
-    if (current) {
-      currentHook = current.memorizedState;
-    } else {
-      currentHook = null;
-    }
-  } else {
-    // 如果有currentHook 说明不是第一个hook
-    currentHook = currentHook.next;
-  }
-
-  // 如果没找到currentHook 说明hook数量对不上
-  if (currentHook === null) {
-    throw new Error("render more hooks than previouse render!");
-  }
-
-  // 拿到currentHook了 需要根据其构建当前的workInProgrerssHook
-  const hook = {
-    memorizedState: currentHook.memorizedState,
-    updateQueue: currentHook.updateQueue,
-    next: null
-  };
-  if (currentRenderingFiber.memorizedState === null) {
-    currentRenderingFiber.memorizedState = hook;
-  } else {
-    workInProgressHook.next = hook;
-  }
-  workInProgressHook = hook;
-  return hook;
-}
-
-/** 派发修改state */
-function dispatchSetState(fiber, updateQueue, action) {
-  // 获取一个优先级 根据 dispatchSetState 执行所在的上下文
-  const lane = (0,_fiberLanes__WEBPACK_IMPORTED_MODULE_3__.requestUpdateLane)();
-  // 创建一个update对象
-  const update = new _updateQueue__WEBPACK_IMPORTED_MODULE_6__.Update(action, lane);
-  if (updateQueue.shared.pending === null && fiber.lanes === _fiberLanes__WEBPACK_IMPORTED_MODULE_3__.NoLane) {
-    // 没有其他更新任务的时候进行eagerState优化
-    const currentState = updateQueue.lastRenderedState;
-    let eagerState;
-    if (typeof action === "function") {
-      eagerState = action(currentState);
-    } else {
-      eagerState = action;
-    }
-
-    // 判断 eagerState 和 currentState
-    if (Object.is(eagerState, currentState)) {
-      update.hasEagerState = true;
-      update.eagerState = eagerState;
-      // updateQueue.enqueue(update, fiber, NoLane); // 优先级为NoLane 保证在下一次update可以消耗掉此次update
-      return;
-    }
-  }
-  // 入队 并且加入到fiber上
-  updateQueue.enqueue(update, fiber, lane);
-  // 开启调度时，也需要传入当前优先级
-  (0,_workLoop__WEBPACK_IMPORTED_MODULE_7__.scheduleUpdateOnFiber)(fiber, lane);
-}
-
-/** 挂载Effect */
-function mountEffect(create, deps) {
-  /** effect 在hook中的存储方式是：
-   *  hook:
-   *     memorizedState = Effect
-   *     updateQueue = null
-   *     next = nextHook
-   *  fiber:
-   *     updateQueue -> Effect1 -next-> Effect2 -...
-   */
-
-  // 获取到hook
-  const hook = mountWorkInProgressHook();
-  // 给fiber设置PassiveEffect 表示存在被动副作用
-  currentRenderingFiber.flags |= _flags__WEBPACK_IMPORTED_MODULE_4__.PassiveEffect;
-  hook.memorizedState = pushEffect(
-  // 初始化状态下，所有的useEffect都执行，所以这里flag设置为   Passive|HookHasEffect
-  _hookEffectTags__WEBPACK_IMPORTED_MODULE_5__.Passive | _hookEffectTags__WEBPACK_IMPORTED_MODULE_5__.HookHasEffect, create, null, deps);
-}
-
-/** 更新Effect */
-function updateEffect(create, deps) {
-  // 获取当前hook
-  const hook = updateWorkInProgressHook();
-  const prevDeps = hook.memorizedState.deps;
-  const destory = hook.memorizedState.destory;
-  if (areHookInputsEqual(prevDeps, deps)) {
-    // 相等 pushEffect 并且设置tag为Passive 被动副作用
-    hook.memorizedState = pushEffect(_hookEffectTags__WEBPACK_IMPORTED_MODULE_5__.Passive, create,
-    // 前一个副作用hook的destory
-    destory, deps);
-  } else {
-    /** 不等 表示hook有Effect */
-    hook.memorizedState = pushEffect(_hookEffectTags__WEBPACK_IMPORTED_MODULE_5__.Passive | _hookEffectTags__WEBPACK_IMPORTED_MODULE_5__.HookHasEffect,
-    // 注意这里是 Passive 是Effect的tag 区分fiber的tag PassiveEffect
-    create,
-    // 前一个副作用hook的destory
-    destory, deps);
-  }
-  currentRenderingFiber.flags |= _flags__WEBPACK_IMPORTED_MODULE_4__.PassiveEffect;
-}
-
-/** 创建Effect对象，把effect加入到fiber.updateQueue 并且返回创建的Effect */
-function pushEffect(tags, create, destory, deps) {
-  const effect = {
-    tags,
-    create,
-    destory,
-    deps: deps === undefined ? null : deps,
-    next: null
-  };
-  const updateQueue = currentRenderingFiber.updateQueue;
-  if (!updateQueue || !(updateQueue instanceof _updateQueue__WEBPACK_IMPORTED_MODULE_6__.FCUpdateQueue)) {
-    // 创建一个FCUpdateQueue
-    const fcUpdateQueue = new _updateQueue__WEBPACK_IMPORTED_MODULE_6__.FCUpdateQueue();
-    effect.next = effect; // 构建环
-    fcUpdateQueue.lastEffect = effect;
-    currentRenderingFiber.updateQueue = fcUpdateQueue;
-  } else {
-    // 已经存在 FCUpdateQueue 添加 后加环
-    const fcUpdateQueue = currentRenderingFiber.updateQueue;
-    if (fcUpdateQueue.lastEffect) {
-      effect.next = fcUpdateQueue.lastEffect.next;
-      fcUpdateQueue.lastEffect.next = effect;
-      fcUpdateQueue.lastEffect = effect;
-    }
-  }
-  return effect;
-}
-
-/** 潜比较Deps */
-function areHookInputsEqual(prevDeps, curDeps) {
-  if (prevDeps === null || curDeps === null) return false;
-  if (prevDeps?.length !== curDeps?.length) return false;
-  for (let i = 0; i < prevDeps.length; i++) {
-    if (Object.is(prevDeps[i], curDeps[i])) {
-      continue;
-    }
-    return false;
-  }
-  return true;
-}
-
-/** transition */
-function mountTransition() {
-  // 设置pending state
-  const [isPending, setPending] = mountState(false);
-  // 获得hook
-  const hook = mountWorkInProgressHook();
-  // 创建startTransition
-  const start = startTransition.bind(null, setPending);
-  // 记录start
-  hook.memorizedState = start;
-  // 返回pending和start
-  return [isPending, start];
-}
-function updateTransition() {
-  const [isPending] = updateState();
-  const hook = updateWorkInProgressHook();
-  const start = hook.memorizedState;
-  return [isPending, start];
-}
-function startTransition(setPending, callback) {
-  // 开始transition 第一次更新 此时优先级高
-  setPending(true);
-  // transition过程，下面的优先级低
-  const prevTransition = isTransition;
-
-  // 设置标记 表示处于transition过程中，在fiberHook.ts/requestUpdateLane会判断这个变量，如果true则返回transtionLane
-  isTransition = true;
-  // 设置标记 （在react原版中 这里是 1）
-  // 第二次更新 优先级低
-  callback();
-  // 第三次更新 重新设置pending 优先级低
-  setPending(false);
-  // 恢复isTransition
-  isTransition = prevTransition;
-}
-
-/** 挂载Ref */
-function mountRef(initialValue) {
-  const hook = mountWorkInProgressHook();
-  hook.memorizedState = {
-    current: initialValue
-  };
-  return hook.memorizedState;
-}
-
-/** 更新Ref 其实就是保存一个值 */
-function updateRef() {
-  const hook = updateWorkInProgressHook();
-  return hook.memorizedState;
-}
-
-/** useMemo */
-function mountMemo(nextCreate, deps) {
-  const hook = mountWorkInProgressHook();
-  hook.memorizedState = [nextCreate(), deps];
-  return hook.memorizedState[0];
-}
-function updateMemo(nextCreate, deps) {
-  const hook = updateWorkInProgressHook();
-  const [prevValue, prevDeps] = hook.memorizedState;
-  if (areHookInputsEqual(prevDeps, deps)) {
-    hook.memorizedState = [prevValue, deps];
-  } else {
-    hook.memorizedState = [nextCreate(), deps];
-  }
-  return hook.memorizedState[0];
-}
-
-/** useCallback */
-function mountCallback(callback, deps) {
-  const hook = mountWorkInProgressHook();
-  hook.memorizedState = [callback, deps];
-  return hook.memorizedState[0];
-}
-function updateCallback(callback, deps) {
-  const hook = updateWorkInProgressHook();
-  const [prevCallback, prevDeps] = hook.memorizedState;
-  if (areHookInputsEqual(prevDeps, deps)) {
-    hook.memorizedState = [prevCallback, deps];
-  } else {
-    hook.memorizedState = [callback, deps];
-  }
-  return hook.memorizedState[0];
-}
-
-/** deferedValue */
-function updateDeferedValue(value) {
-  const hook = updateWorkInProgressHook();
-  const prevValue = hook.memorizedState;
-  // 相同 没变化，直接返回
-  if (Object.is(value, prevValue)) return value;
-  if ((0,_fiberLanes__WEBPACK_IMPORTED_MODULE_3__.isSubsetOfLanes)(renderLane, _fiberLanes__WEBPACK_IMPORTED_MODULE_3__.DeferredLane)) {
-    // 低优先级DeferedLane时
-    hook.memorizedState = value;
-    return value;
-  } else {
-    // 优先级高于Deferedlane时
-    currentRenderingFiber.lanes |= _fiberLanes__WEBPACK_IMPORTED_MODULE_3__.DeferredLane;
-    (0,_workLoop__WEBPACK_IMPORTED_MODULE_7__.scheduleUpdateOnFiber)(currentRenderingFiber, _fiberLanes__WEBPACK_IMPORTED_MODULE_3__.DeferredLane);
-    return prevValue;
-  }
-}
-function mountDeferedValue(value) {
-  const hook = mountWorkInProgressHook();
-  hook.memorizedState = value;
-  return hook.memorizedState;
-}
-
-// context不会在memorizedState上记录数据
-function readContext(context) {
-  const consumer = currentRenderingFiber;
-  return (0,_fiberContext__WEBPACK_IMPORTED_MODULE_2__.readContextImpl)(consumer, context);
-}
-
-/** 重置hook */
-function bailoutHook(wip, renderLane) {
-  const current = wip.alternate;
-  if (current !== null) {
-    wip.updateQueue = current.updateQueue; // effectes
-    wip.flags &= ~_flags__WEBPACK_IMPORTED_MODULE_4__.PassiveEffect;
-    // 去掉current上的renderLane 因为此次renderLane没生效
-    current.lanes = (0,_fiberLanes__WEBPACK_IMPORTED_MODULE_3__.removeLanes)(current.lanes, renderLane);
-  }
-}
+const TRANSITION_CONFIG = {
+  isTransition: false
+};
 
 /***/ }),
 /* 15 */
@@ -2101,16 +1685,534 @@ function bailoutHook(wip, renderLane) {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   FCUpdateQueue: () => (/* binding */ FCUpdateQueue),
+/* harmony export */   Update: () => (/* binding */ Update),
+/* harmony export */   UpdateQueue: () => (/* binding */ UpdateQueue)
+/* harmony export */ });
+/* harmony import */ var _fiberLanes__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(13);
+/** 更新队列
+ * 更新队列是一个环状链表 包含next 指向下一个Update
+ * 最后一个Update的next又指向第一个Update
+ */
+
+
+
+/** 更新的Action 可以是State 也可以是函数 */
+
+/** 定义Dispatch函数 */
+
+/** 更新对象 */
+class Update {
+  // 当前更新的优先级Lane
+  /** eagerState的逻辑
+   *  eagerState 急迫的状态修改
+   *  当 当前updateQueue中无update时，会启用该优化
+   *  次优化会在调度update之前就运行一下action 判断值是否变化 如果没变化 则把update加入queue 并且推出此次update 调度
+   */
+
+  constructor(action, lane) {
+    this.action = action;
+    this.next = null;
+    this.lane = lane;
+    this.hasEagerState = false;
+    this.eagerState = null;
+  }
+}
+
+/** 更新队列 */
+class UpdateQueue {
+  /** 派发函数 */
+
+  /** 基础队列 */
+
+  /** 基础state */
+
+  /** 上一次的state 历史记录 用来检查state是否改变 */
+
+  constructor() {
+    /** 初始化 */
+    this.shared = {
+      pending: null
+    };
+    this.dispatch = null;
+    this.baseQueue = null;
+    this.baseState = null;
+    this.lastRenderedState = null;
+  }
+
+  /** 入队，构造环状链表 */
+  enqueue(update, fiber, lane) {
+    if (this.shared.pending === null) {
+      // 插入第一个元素，此时的结构为
+      // shared.pending -> firstUpdate.next -> firstUpdate
+      update.next = update;
+      this.shared.pending = update;
+    } else {
+      // 插入第二个元素
+      update.next = this.shared.pending.next;
+      this.shared.pending.next = update;
+      this.shared.pending = update;
+    }
+    /** 在当前的fiber上设置lane */
+    fiber.lanes = (0,_fiberLanes__WEBPACK_IMPORTED_MODULE_0__.mergeLane)(fiber.lanes, lane);
+    /** 在current上也设置lane 因为在beginwork阶段 wip.lane = NoLane 如果bailout 需要从current恢复 */
+    const current = fiber.alternate;
+    if (current) {
+      current.lanes = (0,_fiberLanes__WEBPACK_IMPORTED_MODULE_0__.mergeLane)(current.lanes, lane);
+    }
+  }
+
+  /** 处理任务 */
+  process(renderLane, onSkipUpdate) {
+    /** 获取baseQueue pending 完成拼接 */
+    let baseState = this.baseState;
+    let baseQueue = this.baseQueue;
+    const currentPending = this.shared.pending;
+
+    // 生成新的baseQueue过程
+    if (currentPending !== null) {
+      if (baseQueue !== null) {
+        // 拼接两个队列
+        // pending -> p1 -> p2 -> p3
+        const pendingFirst = currentPending.next; // p1
+        // baseQueue -> b1->b2->b3
+        const baseFirst = baseQueue.next; // b1
+        // 拼接
+        currentPending.next = baseFirst; // p1 -> p2 -> p3 -> pending -> b1 -> b2 -> b3
+        baseQueue.next = pendingFirst; //b1-> b2 -> b3 -> baseQueue -> p1 -> p2 -> p3
+        // p1 -> p2 -> p3 -> pending -> b1 -> b2 -> b3 baseQueue
+      }
+      // 合并 此时 baseQueue -> b1 -> b2 -> b3 -> p1 -> p2 -> p3
+      baseQueue = currentPending;
+
+      // 覆盖新的baseQueue
+      this.baseQueue = baseQueue;
+
+      // pending可以置空了
+      this.shared.pending = null;
+    }
+
+    // 消费baseQueue过程
+    // 设置新的basestate和basequeue
+    let newBaseState = baseState;
+    let newBaseQueueFirst = null;
+    let newBaseQueueLast = null;
+    // 新的计算值
+    let memorizedState = baseState;
+
+    // 当前遍历到的update
+    let currentUpdate = this.baseQueue?.next;
+    if (currentUpdate) {
+      do {
+        const currentUpdateLane = currentUpdate.lane;
+        // 看是否有权限
+        if ((0,_fiberLanes__WEBPACK_IMPORTED_MODULE_0__.isSubsetOfLanes)(renderLane, currentUpdateLane)) {
+          // 有权限
+          if (newBaseQueueFirst !== null) {
+            // 已经存在newBaseFirst 则往后加此次的update 并且将此次update的lane设置为NoLane 保证下次一定能运行
+            const clone = new Update(currentUpdate.action, _fiberLanes__WEBPACK_IMPORTED_MODULE_0__.NoLane);
+            newBaseQueueLast = newBaseQueueLast.next = clone;
+          }
+          if (currentUpdate.hasEagerState) {
+            memorizedState = currentUpdate.eagerState;
+          } else {
+            // 不论存不存在newBaseFirst 都要计算memorizedState
+            const currentAction = currentUpdate.action;
+            if (currentAction instanceof Function) {
+              /** Action是函数类型 运行返回newState */
+              memorizedState = currentAction(memorizedState);
+            } else {
+              /** 非函数类型，直接赋给新的state */
+              memorizedState = currentAction;
+            }
+          }
+        } else {
+          // 无权限
+          const clone = new Update(currentUpdate.action, currentUpdate.lane);
+          if (onSkipUpdate) {
+            onSkipUpdate(clone);
+          }
+          // 如果newBaseQueueFirst === null 则从第一个开始添加newbaseQueue队列
+          if (newBaseQueueFirst === null) {
+            newBaseQueueFirst = newBaseQueueLast = clone;
+            // newBaseState到此 不在往后更新 下次从此开始
+            newBaseState = memorizedState;
+          } else {
+            newBaseQueueLast = newBaseQueueLast.next = clone;
+          }
+        }
+        currentUpdate = currentUpdate.next;
+      } while (currentUpdate !== this.baseQueue?.next);
+    }
+    if (newBaseQueueFirst === null) {
+      // 此次没有update被跳过，更新newBaseState
+      newBaseState = memorizedState;
+    } else {
+      // newbaseState不变 newBaseQueueFirst newBaseQueueLast 成环
+      newBaseQueueLast.next = newBaseQueueFirst;
+    }
+
+    // 保存baseState和BaseQueue
+    this.baseQueue = newBaseQueueLast;
+    this.baseState = newBaseState;
+    return {
+      memorizedState
+    };
+  }
+}
+
+/** 函数组件专用的UpdateQueue增加了lastEffect 指向当前收集到的Effect */
+class FCUpdateQueue extends UpdateQueue {
+  lastEffect = null;
+}
+
+/***/ }),
+/* 16 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   commitRoot: () => (/* binding */ commitRoot),
+/* harmony export */   ensureRootIsScheduled: () => (/* binding */ ensureRootIsScheduled),
+/* harmony export */   markUpdateLaneFromFiberToRoot: () => (/* binding */ markUpdateLaneFromFiberToRoot),
+/* harmony export */   performConcurrentWorkOnRoot: () => (/* binding */ performConcurrentWorkOnRoot),
+/* harmony export */   performSyncWorkOnRoot: () => (/* binding */ performSyncWorkOnRoot),
+/* harmony export */   renderRoot: () => (/* binding */ renderRoot),
+/* harmony export */   scheduleUpdateOnFiber: () => (/* binding */ scheduleUpdateOnFiber)
+/* harmony export */ });
+/* harmony import */ var _beginwork__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(17);
+/* harmony import */ var _commitWork__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(23);
+/* harmony import */ var _completeWork__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(24);
+/* harmony import */ var _fiber__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(10);
+/* harmony import */ var _flags__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(11);
+/* harmony import */ var _fiberLanes__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(13);
+/* harmony import */ var _scheduler__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(8);
+/* harmony import */ var _syncTaskQueue__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(25);
+/* harmony import */ var _workTag__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(12);
+/* harmony import */ var _hookEffectTags__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(21);
+
+
+
+
+
+
+
+
+
+
+
+/** 工作中间状态 */
+// 工作中的状态
+const RootInProgress = 0;
+/**
+ * RootInComplete 和 RootCompleted 用来控制并发模式下 重新执行performConcurrentOnRoot
+ * 这个状态由renderRoot返回 判断方式是 并发模式 在workConcurrentkloop执行后 workInProgress不为 null
+ * */
+// 并发中间状态
+const RootInComplete = 1;
+// 完成状态
+const RootCompleted = 2;
+// 未完成状态，不用进入commit阶段
+const RootDidNotComplete = 3;
+
+/** 全局变量，表示当前正在处理的Fiber */
+let workInProgress = null;
+/** 表示当前正在render阶段对应的任务对应的lane 用来在任务中断后重启判断跳过初始化流程 */
+let wipRootRenderLane = _fiberLanes__WEBPACK_IMPORTED_MODULE_5__.NoLane;
+
+/**
+ * 从当前fiberNode找到root节点 并且更新沿途fiber的childLanes
+ * @param fiberNode
+ */
+function markUpdateLaneFromFiberToRoot(fiberNode, lane) {
+  let parent = fiberNode.return; // parent表示父节点
+  let node = fiberNode; // node标记当前节点
+  while (parent !== null) {
+    parent.childLanes = (0,_fiberLanes__WEBPACK_IMPORTED_MODULE_5__.mergeLane)(parent.childLanes, lane);
+    const alternate = parent.alternate;
+    if (alternate !== null) {
+      alternate.childLanes = (0,_fiberLanes__WEBPACK_IMPORTED_MODULE_5__.mergeLane)(alternate.childLanes, lane);
+    }
+    // 处理parent节点的childLanes
+    node = parent;
+    parent = parent.return;
+  }
+
+  /** 检查当前是否找到了hostRootFiber */
+  if (node.tag === _workTag__WEBPACK_IMPORTED_MODULE_8__.HostRoot) {
+    return node.stateNode;
+  }
+  return null;
+}
+
+/** 在Fiber中调度更新 */
+function scheduleUpdateOnFiber(fiberNode, lane) {
+  /** 先从更新的fiber节点递归到hostRootFiber
+   *  这个过程中，一个目的是寻找fiberRootNode节点
+   *  一个是更新沿途的 childLines
+   */
+  const fiberRootNode = markUpdateLaneFromFiberToRoot(fiberNode, lane);
+  // 更新root的pendingLane, 更新root节点的pendingLanes 表示当前正在处理的lanes
+  (0,_fiberLanes__WEBPACK_IMPORTED_MODULE_5__.markRootUpdated)(fiberRootNode, lane);
+  // 保证根节点被正确调度
+  ensureRootIsScheduled(fiberRootNode);
+}
+function ensureRootIsScheduled(root) {
+  // 先实现同步调度 获取当前最高优先级
+  const highestPriorityLane = (0,_fiberLanes__WEBPACK_IMPORTED_MODULE_5__.getNextLane)(root);
+  // 判断，如果不存在优先级 说明没有任务需要继续调度了 直接returna
+  if (highestPriorityLane === _fiberLanes__WEBPACK_IMPORTED_MODULE_5__.NoLane) return;
+  // 批处理更新, 微任务调用更新
+  if (highestPriorityLane === _fiberLanes__WEBPACK_IMPORTED_MODULE_5__.SyncLane) {
+    (0,_syncTaskQueue__WEBPACK_IMPORTED_MODULE_7__.scheduleSyncCallback)(performSyncWorkOnRoot.bind(null, root));
+    // 设置微任务回调 冲洗缓冲区
+    (0,_syncTaskQueue__WEBPACK_IMPORTED_MODULE_7__.flushSyncCallbacks)();
+  } else {
+    // 其他优先级 使用scheduler调度
+    _scheduler__WEBPACK_IMPORTED_MODULE_6__["default"].scheduleCallback((0,_fiberLanes__WEBPACK_IMPORTED_MODULE_5__.lanesToSchedulerPriority)(highestPriorityLane), performConcurrentWorkOnRoot.bind(null, root));
+  }
+}
+
+/** 从root开始 处理同步任务 */
+function performSyncWorkOnRoot(root) {
+  // 获取当前的优先级
+  const lane = (0,_fiberLanes__WEBPACK_IMPORTED_MODULE_5__.getNextLane)(root);
+  if (lane !== _fiberLanes__WEBPACK_IMPORTED_MODULE_5__.SyncLane) {
+    /**
+     * 这里 lane如果不是同步任务了，说明同步任务的lane已经被remove 应该执行低优先级的任务了
+     *  此时应该停止执行当前任务 重新调度
+     * 【实现同步任务的批处理，当第一次执行完之后 commit阶段remove SyncLane 这里就继续不下去了，
+     * 后面微任务中的 performSyncWorkOnRoot都不执行了】
+     */
+    return ensureRootIsScheduled(root);
+  }
+
+  // 开始生成fiber 关闭并发模式
+  const exitStatus = renderRoot(root, lane, false);
+  switch (exitStatus) {
+    // 注意 同步任务一次性执行完 不存在RootInComplete中断的情况
+    case RootCompleted:
+      // 执行成功 设置finishedWork 和 finishedLane 并且commit
+      // 设置root.finishedWork
+      root.finishedWork = root.current.alternate;
+      root.finishedLane = lane;
+      // 设置wipRootRenderLane = NoLane;
+      wipRootRenderLane = _fiberLanes__WEBPACK_IMPORTED_MODULE_5__.NoLane;
+      commitRoot(root);
+    default:
+    // TODO Suspense的情况
+  }
+}
+
+/** 从root开始 处理并发任务
+ *  这个函数是要传入schduler中的 其中didTimeout就是当前任务是否超时
+ */
+function performConcurrentWorkOnRoot(root, didTimeout) {
+  const lane = (0,_fiberLanes__WEBPACK_IMPORTED_MODULE_5__.getNextLane)(root);
+  if (lane === _fiberLanes__WEBPACK_IMPORTED_MODULE_5__.NoLane) {
+    // 没有任务需要处理了 这里也不需要调度了 用来完成批处理
+    return;
+  }
+
+  // 开始生成fiber 关闭并发模式 ,在没有超时的情况下，可以开启并发中断
+  const exitStatus = renderRoot(root, lane, !didTimeout);
+  switch (exitStatus) {
+    case RootInComplete:
+      // 中断的情况 需要返回subTask 重新注册任务
+      return performConcurrentWorkOnRoot.bind(null, root);
+    case RootCompleted:
+      //任务完成 收尾 commit
+      // 设置root.finishedWork
+      root.finishedWork = root.current.alternate;
+      root.finishedLane = lane;
+      // 设置wipRootRenderLane = NoLane;
+      wipRootRenderLane = _fiberLanes__WEBPACK_IMPORTED_MODULE_5__.NoLane;
+      commitRoot(root);
+  }
+}
+
+/**
+ * prepareFreshStack 这个函数的命名可能会让人觉得它与“刷新（refresh）”相关，
+ * 但它的作用实际上是为了 准备一个新的工作栈，而不是刷新。
+ * @param root
+ * @param lane 当前车道
+ */
+function prepareRefreshStack(root, lane) {
+  // 重新赋finishedWork
+  root.finishedWork = null;
+  root.finishedLane = _fiberLanes__WEBPACK_IMPORTED_MODULE_5__.NoLane;
+  // 设置当前的运行任务lane
+  wipRootRenderLane = lane;
+  /** 给workInProgress赋值 */
+  /** 这里在首次进入的时候 会创建一个新的hostRootFiber
+   * 在react中存在两棵fiber树，两个hostRootFiber根节点 用alternate链接，成为双缓存
+   */
+
+  workInProgress = (0,_fiber__WEBPACK_IMPORTED_MODULE_3__.createWorkInProgress)(root.current, {});
+}
+function completeUnitOfWork(fiber) {
+  // 归
+  while (fiber !== null) {
+    (0,_completeWork__WEBPACK_IMPORTED_MODULE_2__.completeWork)(fiber);
+    if (fiber.sibling !== null) {
+      // 有子节点 修改wip 退出继续递的过程
+      workInProgress = fiber.sibling;
+      return;
+    }
+
+    /** 向上归 修改workInProgress */
+    fiber = fiber.return;
+    workInProgress = fiber;
+  }
+}
+
+/**
+ * 处理单个fiber单元 包含 递，归 2个过程
+ * @param fiber
+ */
+function performUnitOfWork(fiber) {
+  // beginWork 递的过程
+  const next = (0,_beginwork__WEBPACK_IMPORTED_MODULE_0__.beginWork)(fiber, wipRootRenderLane);
+  // 递的过程结束，保存pendingProps
+  fiber.memorizedProps = fiber.pendingProps;
+  // 这里不能直接给workInProgress赋值，如果提前赋workInProgress为null 会导致递归提前结束
+  // 如果next为 null 则表示已经递到叶子节点，需要开启归到过程
+  if (next === null) {
+    /** 开始归的过程 */
+    completeUnitOfWork(fiber);
+  } else {
+    // 继续递
+    workInProgress = next;
+  }
+  // 递的过程可打断，每执行完一个beginWork 切分成一个任务
+  // complete归的过程不可打断，需要执行到下一个有sibling的节点/根节点 (return === null)
+}
+
+/** 递归循环 */
+function workLoop() {
+  while (workInProgress) {
+    performUnitOfWork(workInProgress);
+  }
+}
+
+/** 在并发模式下，如果shouldYieldToHost 则让出主线程 暂停render过程 */
+function workConcurrentLoop() {
+  while (workInProgress && !_scheduler__WEBPACK_IMPORTED_MODULE_6__["default"].shouldYieldToHost()) {
+    performUnitOfWork(workInProgress);
+  }
+}
+
+/**
+ * 渲染root 生成fiber对象
+ * @param root  当前根节点
+ * @param lane  当前车道
+ * @param shouldTimeSlice 是否开启并发
+ */
+function renderRoot(root, lane, shouldTimeSlice) {
+  let workLoopRetryTimes = 0;
+  if (wipRootRenderLane !== lane) {
+    console.log('中断');
+    // 避免重新进行初始化
+    /** 先进行准备初始化 */
+    prepareRefreshStack(root, lane);
+  }
+  while (true) {
+    try {
+      // 开启时间片 scheduler调度
+      shouldTimeSlice ? workConcurrentLoop() : workLoop();
+      break;
+    } catch (e) {
+      /** 使用try catch保证workLoop顺利执行 多次尝试 */
+      workLoopRetryTimes++;
+      if (workLoopRetryTimes > 20) {
+        console.warn("workLoop执行错误！", e);
+        break;
+      }
+    }
+  }
+
+  /** 判断任务是否执行完成 如果执行完成RootCompleted 否则 返回RootInCompleted*/
+  if (shouldTimeSlice && workInProgress !== null) {
+    return RootInComplete;
+  }
+
+  // 任务完成
+  return RootCompleted;
+}
+
+/** commit阶段 */
+function commitRoot(root) {
+  const finishedWork = root.finishedWork;
+  if (finishedWork === null) return;
+  const lane = root.finishedLane;
+  root.finishedWork = null;
+  root.finishedLane = _fiberLanes__WEBPACK_IMPORTED_MODULE_5__.NoLane;
+
+  // 从root.pendingLanes去掉当前的lane
+  (0,_fiberLanes__WEBPACK_IMPORTED_MODULE_5__.markRootFinished)(root, lane);
+
+  /** 设置调度 执行passiveEffect */
+  /** 真正执行会在commit之后 不影响渲染 */
+  /** commit阶段会收集effect到root.pendingPassiveEffect */
+  // 有删除 或者收集到Passive 都运行
+  if ((finishedWork.flags & _flags__WEBPACK_IMPORTED_MODULE_4__.PassiveMask) !== _flags__WEBPACK_IMPORTED_MODULE_4__.NoFlags || (finishedWork.subTreeFlags & _flags__WEBPACK_IMPORTED_MODULE_4__.PassiveMask) !== _flags__WEBPACK_IMPORTED_MODULE_4__.NoFlags) {
+    // 调度副作用
+    _scheduler__WEBPACK_IMPORTED_MODULE_6__["default"].scheduleCallback(_scheduler__WEBPACK_IMPORTED_MODULE_6__.PriorityLevel.NORMAL_PRIORITY, flushPassiveEffect.bind(null, root.pendingPassiveEffects));
+  }
+
+  /** hostRootFiber是否有effect  */
+  const hostRootFiberHasEffect = (finishedWork.flags & (_flags__WEBPACK_IMPORTED_MODULE_4__.MutationMask | _flags__WEBPACK_IMPORTED_MODULE_4__.PassiveMask)) !== _flags__WEBPACK_IMPORTED_MODULE_4__.NoFlags;
+
+  /** hostRootFiber的子树是否有effect  */
+  const subtreeHasEffect = (finishedWork.subTreeFlags & (_flags__WEBPACK_IMPORTED_MODULE_4__.MutationMask | _flags__WEBPACK_IMPORTED_MODULE_4__.PassiveMask)) !== _flags__WEBPACK_IMPORTED_MODULE_4__.NoFlags;
+
+  /** 有Effect才处理 */
+  if (hostRootFiberHasEffect || subtreeHasEffect) {
+    (0,_commitWork__WEBPACK_IMPORTED_MODULE_1__.commitMutationEffects)(finishedWork, root);
+  }
+  // commit完成 修改current指向新的树
+  root.current = finishedWork;
+  // commitLayout阶段 处理Attach Ref
+  (0,_commitWork__WEBPACK_IMPORTED_MODULE_1__.commitLayoutEffects)(finishedWork, root);
+  // 确保可以继续调度
+  ensureRootIsScheduled(root);
+}
+
+// 处理被动Effect
+// 此函数会被作为宏任务调用 / 使用schduler调度
+function flushPassiveEffect(pendingPassiveEffect) {
+  // 处理卸载 把所有的Passive flag的effect都执行destor
+  pendingPassiveEffect.unmount.forEach(unmountEffect => {
+    (0,_commitWork__WEBPACK_IMPORTED_MODULE_1__.commitHookEffectListUnmount)(_hookEffectTags__WEBPACK_IMPORTED_MODULE_9__.Passive, unmountEffect);
+  });
+  pendingPassiveEffect.unmount = [];
+  // 处理update 的destory flag为Passive|HookHasEffect
+  pendingPassiveEffect.update.forEach(updateEffect => {
+    (0,_commitWork__WEBPACK_IMPORTED_MODULE_1__.commitHookEffectListDestory)(_hookEffectTags__WEBPACK_IMPORTED_MODULE_9__.Passive | _hookEffectTags__WEBPACK_IMPORTED_MODULE_9__.HookHasEffect, updateEffect);
+  });
+  // 处理update的create flag为Passive| HookHasEffect
+  pendingPassiveEffect.update.forEach(updateEffect => {
+    (0,_commitWork__WEBPACK_IMPORTED_MODULE_1__.commitHookEffectListCreate)(_hookEffectTags__WEBPACK_IMPORTED_MODULE_9__.Passive | _hookEffectTags__WEBPACK_IMPORTED_MODULE_9__.HookHasEffect, updateEffect);
+  });
+  pendingPassiveEffect.update = [];
+}
+
+/***/ }),
+/* 17 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   beginWork: () => (/* binding */ beginWork),
 /* harmony export */   markWipReceiveUpdate: () => (/* binding */ markWipReceiveUpdate)
 /* harmony export */ });
-/* harmony import */ var _childReconciler__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(16);
+/* harmony import */ var _childReconciler__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(18);
 /* harmony import */ var _workTag__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(12);
-/* harmony import */ var _fiberHooks__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(14);
+/* harmony import */ var _fiberHooks__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(19);
 /* harmony import */ var _fiberLanes__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(13);
 /* harmony import */ var _flags__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(11);
-/* harmony import */ var _utils_shallowEqual__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(17);
-/* harmony import */ var _fiberContext__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(18);
+/* harmony import */ var _utils_shallowEqual__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(22);
+/* harmony import */ var _fiberContext__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(20);
 
 
 
@@ -2382,7 +2484,7 @@ function updateContextProvider(wip, renderLane) {
 }
 
 /***/ }),
-/* 16 */
+/* 18 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -2703,43 +2805,446 @@ function cloneChildFibers(wip) {
 }
 
 /***/ }),
-/* 17 */
+/* 19 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (/* binding */ shallowEqual)
+/* harmony export */   bailoutHook: () => (/* binding */ bailoutHook),
+/* harmony export */   renderWithHooks: () => (/* binding */ renderWithHooks)
 /* harmony export */ });
-/** 对比两个对象中的属性是否浅比较相等
- *  shallowEqual在React.memo 对比curent.memorizedProps 和 wip.pendingProps中使用 区分hooks中的 areHookInputsEqual 后者判断的是数组
- */
-function shallowEqual(obj1, obj2) {
-  // 先用Object.is 对比排除 基本类型 相同地址对象的情况
-  if (Object.is(obj1, obj2)) {
-    return true;
+/* harmony import */ var _react_currentDispatcher__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(3);
+/* harmony import */ var _share_transition__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(14);
+/* harmony import */ var _beginwork__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(17);
+/* harmony import */ var _fiberContext__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(20);
+/* harmony import */ var _fiberLanes__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(13);
+/* harmony import */ var _flags__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(11);
+/* harmony import */ var _hookEffectTags__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(21);
+/* harmony import */ var _updateQueue__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(15);
+/* harmony import */ var _workLoop__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(16);
+
+
+
+
+
+
+
+
+
+
+/** 定义Hook类型 */
+
+/** 定义effect */
+
+/** 定义一些全局变量 */
+/** 当前正在渲染的hook */
+let currentRenderingFiber = null;
+/** 当前正在处理的HOOK */
+let workInProgressHook = null;
+/** currentHook current fiber和当前workInProgressHook对应的hook */
+let currentHook = null;
+// 需要注意 wipxxx都是当前处理fiber tree上的 current都是当前已经渲染的fiber tre上的属性
+let renderLane = _fiberLanes__WEBPACK_IMPORTED_MODULE_4__.NoLane;
+
+/** 运行函数组件以及hooks */
+function renderWithHooks(wip, Component, lane) {
+  // 主要作用是，运行函数组件 并且在函数运行上下文挂载currentDispatcher 在运行之后 卸载Dispatcher
+  // 保证hook只能在函数组件内运行
+
+  // 设置当前正在渲染的fiber
+  currentRenderingFiber = wip;
+
+  // 清空memoizedState
+  wip.memorizedState = null;
+  // 重置 effect链表
+  wip.updateQueue = null;
+
+  // 当前已经渲染的fiber
+  const current = wip.alternate;
+  renderLane = lane;
+  if (current !== null) {
+    // update
+    _react_currentDispatcher__WEBPACK_IMPORTED_MODULE_0__.currentDispatcher.current = {
+      useState: updateState,
+      useEffect: updateEffect,
+      useTransition: updateTransition,
+      useDeferedValue: updateDeferedValue,
+      useRef: updateRef,
+      useMemo: updateMemo,
+      useCallback: updateCallback,
+      useContext: readContext
+    };
+  } else {
+    // mount
+    _react_currentDispatcher__WEBPACK_IMPORTED_MODULE_0__.currentDispatcher.current = {
+      useState: mountState,
+      useEffect: mountEffect,
+      useTransition: mountTransition,
+      useDeferedValue: mountDeferedValue,
+      useRef: mountRef,
+      useMemo: mountMemo,
+      useCallback: mountCallback,
+      useContext: readContext
+    };
   }
 
-  // 排除obj1 obj2 任意一个不是对象或者null的情况
-  if (typeof obj1 !== "object" || obj1 === null || typeof obj2 !== "object" || obj2 === null) {
-    return false;
+  // 运行函数
+  const pendingProps = wip.pendingProps;
+  const childrenElements = Component(pendingProps);
+
+  // 恢复
+  currentRenderingFiber = null;
+  workInProgressHook = null;
+  currentHook = null;
+  _react_currentDispatcher__WEBPACK_IMPORTED_MODULE_0__.currentDispatcher.current = null;
+  renderLane = _fiberLanes__WEBPACK_IMPORTED_MODULE_4__.NoLane;
+  return childrenElements;
+}
+
+/** 挂载state */
+function mountState(initialState) {
+  const hook = mountWorkInProgressHook();
+  let memorizedState;
+  // 计算初始值
+  if (typeof initialState === "function") {
+    memorizedState = initialState();
+  } else {
+    memorizedState = initialState;
   }
 
-  // 运行到此 obj1 obj2 一定是对象 并且都不是null 开始判断其属性
-  // 属性数量判断 不一样一定属性不相等
-  if (Object.keys(obj1).length !== Object.keys(obj2).length) return false;
+  // 挂载memorizedState到hook 注意别挂载错了 currentRenderingFiber 也有一样的memorizedState
+  hook.memorizedState = memorizedState;
+  // 设置hook.taskQueue.dispatch 并且返回,注意dispatch是可以拿到函数组件外部使用的，所以这里需要绑定当前渲染fiber和updateQueue
+  hook.updateQueue.dispatch = dispatchSetState.bind(null, currentRenderingFiber, hook.updateQueue);
+  hook.updateQueue.baseState = memorizedState;
+  // 保存上一次的值
+  hook.updateQueue.lastRenderedState = memorizedState;
+  return [memorizedState, hook.updateQueue.dispatch];
+}
 
-  // 逐个判断属性
-  for (const key in obj1) {
-    if (!Object.prototype.hasOwnProperty.call(obj2, key) || Object.is(obj1[key], obj2[key])) {
-      // 判断 key在obj1内 但是为undefined 但是在obj2中不存在的情况 或者 都存在 但是值不等的情况
-      return false;
+/** 更新state */
+function updateState() {
+  const hook = updateWorkInProgressHook();
+  const {
+    memorizedState
+  } = hook.updateQueue.process(renderLane, update => {
+    currentRenderingFiber.lanes = (0,_fiberLanes__WEBPACK_IMPORTED_MODULE_4__.mergeLane)(currentRenderingFiber.lanes, update.lane);
+  });
+  // 检查state是否变化
+  if (!Object.is(hook.updateQueue.lastRenderedState, memorizedState)) {
+    (0,_beginwork__WEBPACK_IMPORTED_MODULE_2__.markWipReceiveUpdate)();
+  }
+  hook.memorizedState = memorizedState;
+  hook.updateQueue.lastRenderedState = memorizedState;
+  return [memorizedState, hook.updateQueue.dispatch];
+}
+
+/** 挂载当前的workInProgressHook 并且返回 */
+function mountWorkInProgressHook() {
+  if (!currentRenderingFiber) {
+    throw new Error("hooks必须在函数组件内部调用！");
+  }
+  const hook = {
+    memorizedState: null,
+    updateQueue: new _updateQueue__WEBPACK_IMPORTED_MODULE_7__.UpdateQueue(),
+    next: null
+  };
+
+  // hook的挂载方式是 currentRenderdingFiber.memorizedState -> hook1 -next-> hook2 -next-> hook3 -next-> null
+  if (currentRenderingFiber.memorizedState === null) {
+    // 第一次挂载
+    currentRenderingFiber.memorizedState = hook;
+  } else {
+    // 非第一次挂载
+    workInProgressHook.next = hook;
+  }
+  // 设置workInProgressHook
+  workInProgressHook = hook;
+  return hook;
+}
+
+/** 根据current 挂载当前的workInProgressHook 并且返回 */
+function updateWorkInProgressHook() {
+  if (!currentRenderingFiber) {
+    throw new Error("hooks必须在函数组件内部调用！");
+  }
+
+  // 找到当前已经渲染的fiber -> current
+  const current = currentRenderingFiber.alternate;
+
+  // currentHook是指向current元素的hook指针
+  if (currentHook === null) {
+    // 当前还没有currentHook 第一个元素
+    if (current) {
+      currentHook = current.memorizedState;
+    } else {
+      currentHook = null;
     }
+  } else {
+    // 如果有currentHook 说明不是第一个hook
+    currentHook = currentHook.next;
+  }
+
+  // 如果没找到currentHook 说明hook数量对不上
+  if (currentHook === null) {
+    throw new Error("render more hooks than previouse render!");
+  }
+
+  // 拿到currentHook了 需要根据其构建当前的workInProgrerssHook
+  const hook = {
+    memorizedState: currentHook.memorizedState,
+    updateQueue: currentHook.updateQueue,
+    next: null
+  };
+  if (currentRenderingFiber.memorizedState === null) {
+    currentRenderingFiber.memorizedState = hook;
+  } else {
+    workInProgressHook.next = hook;
+  }
+  workInProgressHook = hook;
+  return hook;
+}
+
+/** 派发修改state */
+function dispatchSetState(fiber, updateQueue, action) {
+  // 获取一个优先级 根据 dispatchSetState 执行所在的上下文
+  const lane = (0,_fiberLanes__WEBPACK_IMPORTED_MODULE_4__.requestUpdateLane)();
+  // 创建一个update对象
+  const update = new _updateQueue__WEBPACK_IMPORTED_MODULE_7__.Update(action, lane);
+  if (updateQueue.shared.pending === null && fiber.lanes === _fiberLanes__WEBPACK_IMPORTED_MODULE_4__.NoLane) {
+    // 没有其他更新任务的时候进行eagerState优化
+    const currentState = updateQueue.lastRenderedState;
+    let eagerState;
+    if (typeof action === "function") {
+      eagerState = action(currentState);
+    } else {
+      eagerState = action;
+    }
+
+    // 判断 eagerState 和 currentState
+    if (Object.is(eagerState, currentState)) {
+      update.hasEagerState = true;
+      update.eagerState = eagerState;
+      // updateQueue.enqueue(update, fiber, NoLane); // 优先级为NoLane 保证在下一次update可以消耗掉此次update
+      return;
+    }
+  }
+  // 入队 并且加入到fiber上
+  updateQueue.enqueue(update, fiber, lane);
+  // 开启调度时，也需要传入当前优先级
+  (0,_workLoop__WEBPACK_IMPORTED_MODULE_8__.scheduleUpdateOnFiber)(fiber, lane);
+}
+
+/** 挂载Effect */
+function mountEffect(create, deps) {
+  /** effect 在hook中的存储方式是：
+   *  hook:
+   *     memorizedState = Effect
+   *     updateQueue = null
+   *     next = nextHook
+   *  fiber:
+   *     updateQueue -> Effect1 -next-> Effect2 -...
+   */
+
+  // 获取到hook
+  const hook = mountWorkInProgressHook();
+  // 给fiber设置PassiveEffect 表示存在被动副作用
+  currentRenderingFiber.flags |= _flags__WEBPACK_IMPORTED_MODULE_5__.PassiveEffect;
+  hook.memorizedState = pushEffect(
+  // 初始化状态下，所有的useEffect都执行，所以这里flag设置为   Passive|HookHasEffect
+  _hookEffectTags__WEBPACK_IMPORTED_MODULE_6__.Passive | _hookEffectTags__WEBPACK_IMPORTED_MODULE_6__.HookHasEffect, create, null, deps);
+}
+
+/** 更新Effect */
+function updateEffect(create, deps) {
+  // 获取当前hook
+  const hook = updateWorkInProgressHook();
+  const prevDeps = hook.memorizedState.deps;
+  const destory = hook.memorizedState.destory;
+  if (areHookInputsEqual(prevDeps, deps)) {
+    // 相等 pushEffect 并且设置tag为Passive 被动副作用
+    hook.memorizedState = pushEffect(_hookEffectTags__WEBPACK_IMPORTED_MODULE_6__.Passive, create,
+    // 前一个副作用hook的destory
+    destory, deps);
+  } else {
+    /** 不等 表示hook有Effect */
+    hook.memorizedState = pushEffect(_hookEffectTags__WEBPACK_IMPORTED_MODULE_6__.Passive | _hookEffectTags__WEBPACK_IMPORTED_MODULE_6__.HookHasEffect,
+    // 注意这里是 Passive 是Effect的tag 区分fiber的tag PassiveEffect
+    create,
+    // 前一个副作用hook的destory
+    destory, deps);
+  }
+  currentRenderingFiber.flags |= _flags__WEBPACK_IMPORTED_MODULE_5__.PassiveEffect;
+}
+
+/** 创建Effect对象，把effect加入到fiber.updateQueue 并且返回创建的Effect */
+function pushEffect(tags, create, destory, deps) {
+  const effect = {
+    tags,
+    create,
+    destory,
+    deps: deps === undefined ? null : deps,
+    next: null
+  };
+  const updateQueue = currentRenderingFiber.updateQueue;
+  if (!updateQueue || !(updateQueue instanceof _updateQueue__WEBPACK_IMPORTED_MODULE_7__.FCUpdateQueue)) {
+    // 创建一个FCUpdateQueue
+    const fcUpdateQueue = new _updateQueue__WEBPACK_IMPORTED_MODULE_7__.FCUpdateQueue();
+    effect.next = effect; // 构建环
+    fcUpdateQueue.lastEffect = effect;
+    currentRenderingFiber.updateQueue = fcUpdateQueue;
+  } else {
+    // 已经存在 FCUpdateQueue 添加 后加环
+    const fcUpdateQueue = currentRenderingFiber.updateQueue;
+    if (fcUpdateQueue.lastEffect) {
+      effect.next = fcUpdateQueue.lastEffect.next;
+      fcUpdateQueue.lastEffect.next = effect;
+      fcUpdateQueue.lastEffect = effect;
+    }
+  }
+  return effect;
+}
+
+/** 潜比较Deps */
+function areHookInputsEqual(prevDeps, curDeps) {
+  if (prevDeps === null || curDeps === null) return false;
+  if (prevDeps?.length !== curDeps?.length) return false;
+  for (let i = 0; i < prevDeps.length; i++) {
+    if (Object.is(prevDeps[i], curDeps[i])) {
+      continue;
+    }
+    return false;
   }
   return true;
 }
 
+/** transition */
+function mountTransition() {
+  // 设置pending state
+  const [isPending, setPending] = mountState(false);
+  // 获得hook
+  const hook = mountWorkInProgressHook();
+  // 创建startTransition
+  const start = startTransition.bind(null, setPending);
+  // 记录start
+  hook.memorizedState = start;
+  // 返回pending和start
+  return [isPending, start];
+}
+function updateTransition() {
+  const [isPending] = updateState();
+  const hook = updateWorkInProgressHook();
+  const start = hook.memorizedState;
+  return [isPending, start];
+}
+function startTransition(setPending, callback) {
+  // 开始transition 第一次更新 此时优先级高
+  setPending(true);
+  // transition过程，下面的优先级低
+  const prevTransition = _share_transition__WEBPACK_IMPORTED_MODULE_1__.TRANSITION_CONFIG.isTransition;
+
+  // 设置标记 表示处于transition过程中，在fiberHook.ts/requestUpdateLane会判断这个变量，如果true则返回transtionLane
+  _share_transition__WEBPACK_IMPORTED_MODULE_1__.TRANSITION_CONFIG.isTransition = true;
+  // 设置标记 （在react原版中 这里是 1）
+  // 第二次更新 优先级低
+  callback();
+  // 第三次更新 重新设置pending 优先级低
+  setPending(false);
+  // 恢复isTransition
+  _share_transition__WEBPACK_IMPORTED_MODULE_1__.TRANSITION_CONFIG.isTransition = prevTransition;
+}
+
+/** 挂载Ref */
+function mountRef(initialValue) {
+  const hook = mountWorkInProgressHook();
+  hook.memorizedState = {
+    current: initialValue
+  };
+  return hook.memorizedState;
+}
+
+/** 更新Ref 其实就是保存一个值 */
+function updateRef() {
+  const hook = updateWorkInProgressHook();
+  return hook.memorizedState;
+}
+
+/** useMemo */
+function mountMemo(nextCreate, deps) {
+  const hook = mountWorkInProgressHook();
+  hook.memorizedState = [nextCreate(), deps];
+  return hook.memorizedState[0];
+}
+function updateMemo(nextCreate, deps) {
+  const hook = updateWorkInProgressHook();
+  const [prevValue, prevDeps] = hook.memorizedState;
+  if (areHookInputsEqual(prevDeps, deps)) {
+    hook.memorizedState = [prevValue, deps];
+  } else {
+    hook.memorizedState = [nextCreate(), deps];
+  }
+  return hook.memorizedState[0];
+}
+
+/** useCallback */
+function mountCallback(callback, deps) {
+  const hook = mountWorkInProgressHook();
+  hook.memorizedState = [callback, deps];
+  return hook.memorizedState[0];
+}
+function updateCallback(callback, deps) {
+  const hook = updateWorkInProgressHook();
+  const [prevCallback, prevDeps] = hook.memorizedState;
+  if (areHookInputsEqual(prevDeps, deps)) {
+    hook.memorizedState = [prevCallback, deps];
+  } else {
+    hook.memorizedState = [callback, deps];
+  }
+  return hook.memorizedState[0];
+}
+
+/** deferedValue */
+function updateDeferedValue(value) {
+  const hook = updateWorkInProgressHook();
+  const prevValue = hook.memorizedState;
+  // 相同 没变化，直接返回
+  if (Object.is(value, prevValue)) return value;
+  if ((0,_fiberLanes__WEBPACK_IMPORTED_MODULE_4__.isSubsetOfLanes)(renderLane, _fiberLanes__WEBPACK_IMPORTED_MODULE_4__.DeferredLane)) {
+    // 低优先级DeferedLane时
+    hook.memorizedState = value;
+    return value;
+  } else {
+    // 优先级高于Deferedlane时
+    currentRenderingFiber.lanes |= _fiberLanes__WEBPACK_IMPORTED_MODULE_4__.DeferredLane;
+    (0,_workLoop__WEBPACK_IMPORTED_MODULE_8__.scheduleUpdateOnFiber)(currentRenderingFiber, _fiberLanes__WEBPACK_IMPORTED_MODULE_4__.DeferredLane);
+    return prevValue;
+  }
+}
+function mountDeferedValue(value) {
+  const hook = mountWorkInProgressHook();
+  hook.memorizedState = value;
+  return hook.memorizedState;
+}
+
+// context不会在memorizedState上记录数据
+function readContext(context) {
+  const consumer = currentRenderingFiber;
+  return (0,_fiberContext__WEBPACK_IMPORTED_MODULE_3__.readContextImpl)(consumer, context);
+}
+
+/** 重置hook */
+function bailoutHook(wip, renderLane) {
+  const current = wip.alternate;
+  if (current !== null) {
+    wip.updateQueue = current.updateQueue; // effectes
+    wip.flags &= ~_flags__WEBPACK_IMPORTED_MODULE_5__.PassiveEffect;
+    // 去掉current上的renderLane 因为此次renderLane没生效
+    current.lanes = (0,_fiberLanes__WEBPACK_IMPORTED_MODULE_4__.removeLanes)(current.lanes, renderLane);
+  }
+}
+
 /***/ }),
-/* 18 */
+/* 20 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -2750,7 +3255,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   pushContext: () => (/* binding */ pushContext),
 /* harmony export */   readContextImpl: () => (/* binding */ readContextImpl)
 /* harmony export */ });
-/* harmony import */ var _beginwork__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(15);
+/* harmony import */ var _beginwork__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(17);
 /* harmony import */ var _fiberLanes__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(13);
 /* harmony import */ var _workTag__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(12);
 /** 处理context相关 */
@@ -2927,7 +3432,7 @@ function scheduleContextOnParentPath(from, to, renderLane) {
 }
 
 /***/ }),
-/* 19 */
+/* 21 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -2948,525 +3453,43 @@ const Passive = 0b0010;
 const HookHasEffect = 0b0001;
 
 /***/ }),
-/* 20 */
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   FCUpdateQueue: () => (/* binding */ FCUpdateQueue),
-/* harmony export */   Update: () => (/* binding */ Update),
-/* harmony export */   UpdateQueue: () => (/* binding */ UpdateQueue)
-/* harmony export */ });
-/* harmony import */ var _fiberLanes__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(13);
-/** 更新队列
- * 更新队列是一个环状链表 包含next 指向下一个Update
- * 最后一个Update的next又指向第一个Update
- */
-
-
-
-/** 更新的Action 可以是State 也可以是函数 */
-
-/** 定义Dispatch函数 */
-
-/** 更新对象 */
-class Update {
-  // 当前更新的优先级Lane
-  /** eagerState的逻辑
-   *  eagerState 急迫的状态修改
-   *  当 当前updateQueue中无update时，会启用该优化
-   *  次优化会在调度update之前就运行一下action 判断值是否变化 如果没变化 则把update加入queue 并且推出此次update 调度
-   */
-
-  constructor(action, lane) {
-    this.action = action;
-    this.next = null;
-    this.lane = lane;
-    this.hasEagerState = false;
-    this.eagerState = null;
-  }
-}
-
-/** 更新队列 */
-class UpdateQueue {
-  /** 派发函数 */
-
-  /** 基础队列 */
-
-  /** 基础state */
-
-  /** 上一次的state 历史记录 用来检查state是否改变 */
-
-  constructor() {
-    /** 初始化 */
-    this.shared = {
-      pending: null
-    };
-    this.dispatch = null;
-    this.baseQueue = null;
-    this.baseState = null;
-    this.lastRenderedState = null;
-  }
-
-  /** 入队，构造环状链表 */
-  enqueue(update, fiber, lane) {
-    if (this.shared.pending === null) {
-      // 插入第一个元素，此时的结构为
-      // shared.pending -> firstUpdate.next -> firstUpdate
-      update.next = update;
-      this.shared.pending = update;
-    } else {
-      // 插入第二个元素
-      update.next = this.shared.pending.next;
-      this.shared.pending.next = update;
-      this.shared.pending = update;
-    }
-    /** 在当前的fiber上设置lane */
-    fiber.lanes = (0,_fiberLanes__WEBPACK_IMPORTED_MODULE_0__.mergeLane)(fiber.lanes, lane);
-    /** 在current上也设置lane 因为在beginwork阶段 wip.lane = NoLane 如果bailout 需要从current恢复 */
-    const current = fiber.alternate;
-    if (current) {
-      current.lanes = (0,_fiberLanes__WEBPACK_IMPORTED_MODULE_0__.mergeLane)(current.lanes, lane);
-    }
-  }
-
-  /** 处理任务 */
-  process(renderLane, onSkipUpdate) {
-    /** 获取baseQueue pending 完成拼接 */
-    let baseState = this.baseState;
-    let baseQueue = this.baseQueue;
-    const currentPending = this.shared.pending;
-
-    // 生成新的baseQueue过程
-    if (currentPending !== null) {
-      if (baseQueue !== null) {
-        // 拼接两个队列
-        // pending -> p1 -> p2 -> p3
-        const pendingFirst = currentPending.next; // p1
-        // baseQueue -> b1->b2->b3
-        const baseFirst = baseQueue.next; // b1
-        // 拼接
-        currentPending.next = baseFirst; // p1 -> p2 -> p3 -> pending -> b1 -> b2 -> b3
-        baseQueue.next = pendingFirst; //b1-> b2 -> b3 -> baseQueue -> p1 -> p2 -> p3
-        // p1 -> p2 -> p3 -> pending -> b1 -> b2 -> b3 baseQueue
-      }
-      // 合并 此时 baseQueue -> b1 -> b2 -> b3 -> p1 -> p2 -> p3
-      baseQueue = currentPending;
-
-      // 覆盖新的baseQueue
-      this.baseQueue = baseQueue;
-
-      // pending可以置空了
-      this.shared.pending = null;
-    }
-
-    // 消费baseQueue过程
-    // 设置新的basestate和basequeue
-    let newBaseState = baseState;
-    let newBaseQueueFirst = null;
-    let newBaseQueueLast = null;
-    // 新的计算值
-    let memorizedState = baseState;
-
-    // 当前遍历到的update
-    let currentUpdate = this.baseQueue?.next;
-    if (currentUpdate) {
-      do {
-        const currentUpdateLane = currentUpdate.lane;
-        // 看是否有权限
-        if ((0,_fiberLanes__WEBPACK_IMPORTED_MODULE_0__.isSubsetOfLanes)(renderLane, currentUpdateLane)) {
-          // 有权限
-          if (newBaseQueueFirst !== null) {
-            // 已经存在newBaseFirst 则往后加此次的update 并且将此次update的lane设置为NoLane 保证下次一定能运行
-            const clone = new Update(currentUpdate.action, _fiberLanes__WEBPACK_IMPORTED_MODULE_0__.NoLane);
-            newBaseQueueLast = newBaseQueueLast.next = clone;
-          }
-          if (currentUpdate.hasEagerState) {
-            memorizedState = currentUpdate.eagerState;
-          } else {
-            // 不论存不存在newBaseFirst 都要计算memorizedState
-            const currentAction = currentUpdate.action;
-            if (currentAction instanceof Function) {
-              /** Action是函数类型 运行返回newState */
-              memorizedState = currentAction(memorizedState);
-            } else {
-              /** 非函数类型，直接赋给新的state */
-              memorizedState = currentAction;
-            }
-          }
-        } else {
-          // 无权限
-          const clone = new Update(currentUpdate.action, currentUpdate.lane);
-          if (onSkipUpdate) {
-            onSkipUpdate(clone);
-          }
-          // 如果newBaseQueueFirst === null 则从第一个开始添加newbaseQueue队列
-          if (newBaseQueueFirst === null) {
-            newBaseQueueFirst = newBaseQueueLast = clone;
-            // newBaseState到此 不在往后更新 下次从此开始
-            newBaseState = memorizedState;
-          } else {
-            newBaseQueueLast = newBaseQueueLast.next = clone;
-          }
-        }
-        currentUpdate = currentUpdate.next;
-      } while (currentUpdate !== this.baseQueue?.next);
-    }
-    if (newBaseQueueFirst === null) {
-      // 此次没有update被跳过，更新newBaseState
-      newBaseState = memorizedState;
-    } else {
-      // newbaseState不变 newBaseQueueFirst newBaseQueueLast 成环
-      newBaseQueueLast.next = newBaseQueueFirst;
-    }
-
-    // 保存baseState和BaseQueue
-    this.baseQueue = newBaseQueueLast;
-    this.baseState = newBaseState;
-    return {
-      memorizedState
-    };
-  }
-}
-
-/** 函数组件专用的UpdateQueue增加了lastEffect 指向当前收集到的Effect */
-class FCUpdateQueue extends UpdateQueue {
-  lastEffect = null;
-}
-
-/***/ }),
-/* 21 */
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   commitRoot: () => (/* binding */ commitRoot),
-/* harmony export */   ensureRootIsScheduled: () => (/* binding */ ensureRootIsScheduled),
-/* harmony export */   markUpdateLaneFromFiberToRoot: () => (/* binding */ markUpdateLaneFromFiberToRoot),
-/* harmony export */   performConcurrentWorkOnRoot: () => (/* binding */ performConcurrentWorkOnRoot),
-/* harmony export */   performSyncWorkOnRoot: () => (/* binding */ performSyncWorkOnRoot),
-/* harmony export */   renderRoot: () => (/* binding */ renderRoot),
-/* harmony export */   scheduleUpdateOnFiber: () => (/* binding */ scheduleUpdateOnFiber)
-/* harmony export */ });
-/* harmony import */ var _beginwork__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(15);
-/* harmony import */ var _commitWork__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(22);
-/* harmony import */ var _completeWork__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(23);
-/* harmony import */ var _fiber__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(10);
-/* harmony import */ var _flags__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(11);
-/* harmony import */ var _fiberLanes__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(13);
-/* harmony import */ var _scheduler__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(8);
-/* harmony import */ var _syncTaskQueue__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(24);
-/* harmony import */ var _workTag__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(12);
-/* harmony import */ var _hookEffectTags__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(19);
-
-
-
-
-
-
-
-
-
-
-
-/** 工作中间状态 */
-// 工作中的状态
-const RootInProgress = 0;
-/**
- * RootInComplete 和 RootCompleted 用来控制并发模式下 重新执行performConcurrentOnRoot
- * 这个状态由renderRoot返回 判断方式是 并发模式 在workConcurrentkloop执行后 workInProgress不为 null
- * */
-// 并发中间状态
-const RootInComplete = 1;
-// 完成状态
-const RootCompleted = 2;
-// 未完成状态，不用进入commit阶段
-const RootDidNotComplete = 3;
-
-/** 全局变量，表示当前正在处理的Fiber */
-let workInProgress = null;
-/** 表示当前正在render阶段对应的任务对应的lane 用来在任务中断后重启判断跳过初始化流程 */
-let wipRootRenderLane = _fiberLanes__WEBPACK_IMPORTED_MODULE_5__.NoLane;
-
-/**
- * 从当前fiberNode找到root节点 并且更新沿途fiber的childLanes
- * @param fiberNode
- */
-function markUpdateLaneFromFiberToRoot(fiberNode, lane) {
-  let parent = fiberNode.return; // parent表示父节点
-  let node = fiberNode; // node标记当前节点
-  while (parent !== null) {
-    parent.childLanes = (0,_fiberLanes__WEBPACK_IMPORTED_MODULE_5__.mergeLane)(parent.childLanes, lane);
-    const alternate = parent.alternate;
-    if (alternate !== null) {
-      alternate.childLanes = (0,_fiberLanes__WEBPACK_IMPORTED_MODULE_5__.mergeLane)(alternate.childLanes, lane);
-    }
-    // 处理parent节点的childLanes
-    node = parent;
-    parent = parent.return;
-  }
-
-  /** 检查当前是否找到了hostRootFiber */
-  if (node.tag === _workTag__WEBPACK_IMPORTED_MODULE_8__.HostRoot) {
-    return node.stateNode;
-  }
-  return null;
-}
-
-/** 在Fiber中调度更新 */
-function scheduleUpdateOnFiber(fiberNode, lane) {
-  /** 先从更新的fiber节点递归到hostRootFiber
-   *  这个过程中，一个目的是寻找fiberRootNode节点
-   *  一个是更新沿途的 childLines
-   */
-  const fiberRootNode = markUpdateLaneFromFiberToRoot(fiberNode, lane);
-  // 更新root的pendingLane, 更新root节点的pendingLanes 表示当前正在处理的lanes
-  (0,_fiberLanes__WEBPACK_IMPORTED_MODULE_5__.markRootUpdated)(fiberRootNode, lane);
-  // 保证根节点被正确调度
-  ensureRootIsScheduled(fiberRootNode);
-}
-function ensureRootIsScheduled(root) {
-  // 先实现同步调度 获取当前最高优先级
-  const highestPriorityLane = (0,_fiberLanes__WEBPACK_IMPORTED_MODULE_5__.getNextLane)(root);
-  // 判断，如果不存在优先级 说明没有任务需要继续调度了 直接returna
-  if (highestPriorityLane === _fiberLanes__WEBPACK_IMPORTED_MODULE_5__.NoLane) return;
-  // 批处理更新, 微任务调用更新
-  if (highestPriorityLane === _fiberLanes__WEBPACK_IMPORTED_MODULE_5__.SyncLane) {
-    (0,_syncTaskQueue__WEBPACK_IMPORTED_MODULE_7__.scheduleSyncCallback)(performSyncWorkOnRoot.bind(null, root));
-    // 设置微任务回调 冲洗缓冲区
-    (0,_syncTaskQueue__WEBPACK_IMPORTED_MODULE_7__.flushSyncCallbacks)();
-  } else {
-    // 其他优先级 使用scheduler调度
-    _scheduler__WEBPACK_IMPORTED_MODULE_6__["default"].scheduleCallback((0,_fiberLanes__WEBPACK_IMPORTED_MODULE_5__.lanesToSchedulerPriority)(highestPriorityLane), performConcurrentWorkOnRoot.bind(null, root));
-  }
-}
-
-/** 从root开始 处理同步任务 */
-function performSyncWorkOnRoot(root) {
-  // 获取当前的优先级
-  const lane = (0,_fiberLanes__WEBPACK_IMPORTED_MODULE_5__.getNextLane)(root);
-  if (lane !== _fiberLanes__WEBPACK_IMPORTED_MODULE_5__.SyncLane) {
-    /**
-     * 这里 lane如果不是同步任务了，说明同步任务的lane已经被remove 应该执行低优先级的任务了
-     *  此时应该停止执行当前任务 重新调度
-     * 【实现同步任务的批处理，当第一次执行完之后 commit阶段remove SyncLane 这里就继续不下去了，
-     * 后面微任务中的 performSyncWorkOnRoot都不执行了】
-     */
-    return ensureRootIsScheduled(root);
-  }
-
-  // 开始生成fiber 关闭并发模式
-  const exitStatus = renderRoot(root, lane, false);
-  switch (exitStatus) {
-    // 注意 同步任务一次性执行完 不存在RootInComplete中断的情况
-    case RootCompleted:
-      // 执行成功 设置finishedWork 和 finishedLane 并且commit
-      // 设置root.finishedWork
-      root.finishedWork = root.current.alternate;
-      root.finishedLane = lane;
-      // 设置wipRootRenderLane = NoLane;
-      wipRootRenderLane = _fiberLanes__WEBPACK_IMPORTED_MODULE_5__.NoLane;
-      commitRoot(root);
-    default:
-    // TODO Suspense的情况
-  }
-}
-
-/** 从root开始 处理并发任务
- *  这个函数是要传入schduler中的 其中didTimeout就是当前任务是否超时
- */
-function performConcurrentWorkOnRoot(root, didTimeout) {
-  const lane = (0,_fiberLanes__WEBPACK_IMPORTED_MODULE_5__.getNextLane)(root);
-  if (lane === _fiberLanes__WEBPACK_IMPORTED_MODULE_5__.NoLane) {
-    // 没有任务需要处理了 这里也不需要调度了 用来完成批处理
-    return;
-  }
-
-  // 开始生成fiber 关闭并发模式 ,在没有超时的情况下，可以开启并发中断
-  const exitStatus = renderRoot(root, lane, !didTimeout);
-  switch (exitStatus) {
-    case RootInComplete:
-      // 中断的情况 需要返回subTask 重新注册任务
-      return performConcurrentWorkOnRoot.bind(null, root);
-    case RootCompleted:
-      //任务完成 收尾 commit
-      // 设置root.finishedWork
-      root.finishedWork = root.current.alternate;
-      root.finishedLane = lane;
-      // 设置wipRootRenderLane = NoLane;
-      wipRootRenderLane = _fiberLanes__WEBPACK_IMPORTED_MODULE_5__.NoLane;
-      commitRoot(root);
-  }
-}
-
-/**
- * prepareFreshStack 这个函数的命名可能会让人觉得它与“刷新（refresh）”相关，
- * 但它的作用实际上是为了 准备一个新的工作栈，而不是刷新。
- * @param root
- * @param lane 当前车道
- */
-function prepareRefreshStack(root, lane) {
-  // 重新赋finishedWork
-  root.finishedWork = null;
-  root.finishedLane = _fiberLanes__WEBPACK_IMPORTED_MODULE_5__.NoLane;
-  // 设置当前的运行任务lane
-  wipRootRenderLane = lane;
-  /** 给workInProgress赋值 */
-  /** 这里在首次进入的时候 会创建一个新的hostRootFiber
-   * 在react中存在两棵fiber树，两个hostRootFiber根节点 用alternate链接，成为双缓存
-   */
-
-  workInProgress = (0,_fiber__WEBPACK_IMPORTED_MODULE_3__.createWorkInProgress)(root.current, {});
-}
-function completeUnitOfWork(fiber) {
-  // 归
-  while (fiber !== null) {
-    (0,_completeWork__WEBPACK_IMPORTED_MODULE_2__.completeWork)(fiber);
-    if (fiber.sibling !== null) {
-      // 有子节点 修改wip 退出继续递的过程
-      workInProgress = fiber.sibling;
-      return;
-    }
-
-    /** 向上归 修改workInProgress */
-    fiber = fiber.return;
-    workInProgress = fiber;
-  }
-}
-
-/**
- * 处理单个fiber单元 包含 递，归 2个过程
- * @param fiber
- */
-function performUnitOfWork(fiber) {
-  // beginWork 递的过程
-  const next = (0,_beginwork__WEBPACK_IMPORTED_MODULE_0__.beginWork)(fiber, wipRootRenderLane);
-  // 递的过程结束，保存pendingProps
-  fiber.memorizedProps = fiber.pendingProps;
-  // 这里不能直接给workInProgress赋值，如果提前赋workInProgress为null 会导致递归提前结束
-  // 如果next为 null 则表示已经递到叶子节点，需要开启归到过程
-  if (next === null) {
-    /** 开始归的过程 */
-    completeUnitOfWork(fiber);
-  } else {
-    // 继续递
-    workInProgress = next;
-  }
-  // 递的过程可打断，每执行完一个beginWork 切分成一个任务
-  // complete归的过程不可打断，需要执行到下一个有sibling的节点/根节点 (return === null)
-}
-
-/** 递归循环 */
-function workLoop() {
-  while (workInProgress) {
-    performUnitOfWork(workInProgress);
-  }
-}
-
-/** 在并发模式下，如果shouldYieldToHost 则让出主线程 暂停render过程 */
-function workConcurrentLoop() {
-  while (workInProgress && !_scheduler__WEBPACK_IMPORTED_MODULE_6__["default"].shouldYieldToHost()) {
-    performUnitOfWork(workInProgress);
-  }
-}
-
-/**
- * 渲染root 生成fiber对象
- * @param root  当前根节点
- * @param lane  当前车道
- * @param shouldTimeSlice 是否开启并发
- */
-function renderRoot(root, lane, shouldTimeSlice) {
-  let workLoopRetryTimes = 0;
-  if (wipRootRenderLane !== lane) {
-    console.log('中断');
-    // 避免重新进行初始化
-    /** 先进行准备初始化 */
-    prepareRefreshStack(root, lane);
-  }
-  while (true) {
-    try {
-      // 开启时间片 scheduler调度
-      shouldTimeSlice ? workConcurrentLoop() : workLoop();
-      break;
-    } catch (e) {
-      /** 使用try catch保证workLoop顺利执行 多次尝试 */
-      workLoopRetryTimes++;
-      if (workLoopRetryTimes > 20) {
-        console.warn("workLoop执行错误！", e);
-        break;
-      }
-    }
-  }
-
-  /** 判断任务是否执行完成 如果执行完成RootCompleted 否则 返回RootInCompleted*/
-  if (shouldTimeSlice && workInProgress !== null) {
-    return RootInComplete;
-  }
-
-  // 任务完成
-  return RootCompleted;
-}
-
-/** commit阶段 */
-function commitRoot(root) {
-  const finishedWork = root.finishedWork;
-  if (finishedWork === null) return;
-  const lane = root.finishedLane;
-  root.finishedWork = null;
-  root.finishedLane = _fiberLanes__WEBPACK_IMPORTED_MODULE_5__.NoLane;
-
-  // 从root.pendingLanes去掉当前的lane
-  (0,_fiberLanes__WEBPACK_IMPORTED_MODULE_5__.markRootFinished)(root, lane);
-
-  /** 设置调度 执行passiveEffect */
-  /** 真正执行会在commit之后 不影响渲染 */
-  /** commit阶段会收集effect到root.pendingPassiveEffect */
-  // 有删除 或者收集到Passive 都运行
-  if ((finishedWork.flags & _flags__WEBPACK_IMPORTED_MODULE_4__.PassiveMask) !== _flags__WEBPACK_IMPORTED_MODULE_4__.NoFlags || (finishedWork.subTreeFlags & _flags__WEBPACK_IMPORTED_MODULE_4__.PassiveMask) !== _flags__WEBPACK_IMPORTED_MODULE_4__.NoFlags) {
-    // 调度副作用
-    _scheduler__WEBPACK_IMPORTED_MODULE_6__["default"].scheduleCallback(_scheduler__WEBPACK_IMPORTED_MODULE_6__.PriorityLevel.NORMAL_PRIORITY, flushPassiveEffect.bind(null, root.pendingPassiveEffects));
-  }
-
-  /** hostRootFiber是否有effect  */
-  const hostRootFiberHasEffect = (finishedWork.flags & (_flags__WEBPACK_IMPORTED_MODULE_4__.MutationMask | _flags__WEBPACK_IMPORTED_MODULE_4__.PassiveMask)) !== _flags__WEBPACK_IMPORTED_MODULE_4__.NoFlags;
-
-  /** hostRootFiber的子树是否有effect  */
-  const subtreeHasEffect = (finishedWork.subTreeFlags & (_flags__WEBPACK_IMPORTED_MODULE_4__.MutationMask | _flags__WEBPACK_IMPORTED_MODULE_4__.PassiveMask)) !== _flags__WEBPACK_IMPORTED_MODULE_4__.NoFlags;
-
-  /** 有Effect才处理 */
-  if (hostRootFiberHasEffect || subtreeHasEffect) {
-    (0,_commitWork__WEBPACK_IMPORTED_MODULE_1__.commitMutationEffects)(finishedWork, root);
-  }
-  // commit完成 修改current指向新的树
-  root.current = finishedWork;
-  // commitLayout阶段 处理Attach Ref
-  (0,_commitWork__WEBPACK_IMPORTED_MODULE_1__.commitLayoutEffects)(finishedWork, root);
-  // 确保可以继续调度
-  ensureRootIsScheduled(root);
-}
-
-// 处理被动Effect
-// 此函数会被作为宏任务调用 / 使用schduler调度
-function flushPassiveEffect(pendingPassiveEffect) {
-  // 处理卸载 把所有的Passive flag的effect都执行destor
-  pendingPassiveEffect.unmount.forEach(unmountEffect => {
-    (0,_commitWork__WEBPACK_IMPORTED_MODULE_1__.commitHookEffectListUnmount)(_hookEffectTags__WEBPACK_IMPORTED_MODULE_9__.Passive, unmountEffect);
-  });
-  pendingPassiveEffect.unmount = [];
-  // 处理update 的destory flag为Passive|HookHasEffect
-  pendingPassiveEffect.update.forEach(updateEffect => {
-    (0,_commitWork__WEBPACK_IMPORTED_MODULE_1__.commitHookEffectListDestory)(_hookEffectTags__WEBPACK_IMPORTED_MODULE_9__.Passive | _hookEffectTags__WEBPACK_IMPORTED_MODULE_9__.HookHasEffect, updateEffect);
-  });
-  // 处理update的create flag为Passive| HookHasEffect
-  pendingPassiveEffect.update.forEach(updateEffect => {
-    (0,_commitWork__WEBPACK_IMPORTED_MODULE_1__.commitHookEffectListCreate)(_hookEffectTags__WEBPACK_IMPORTED_MODULE_9__.Passive | _hookEffectTags__WEBPACK_IMPORTED_MODULE_9__.HookHasEffect, updateEffect);
-  });
-  pendingPassiveEffect.update = [];
-}
-
-/***/ }),
 /* 22 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ shallowEqual)
+/* harmony export */ });
+/** 对比两个对象中的属性是否浅比较相等
+ *  shallowEqual在React.memo 对比curent.memorizedProps 和 wip.pendingProps中使用 区分hooks中的 areHookInputsEqual 后者判断的是数组
+ */
+function shallowEqual(obj1, obj2) {
+  // 先用Object.is 对比排除 基本类型 相同地址对象的情况
+  if (Object.is(obj1, obj2)) {
+    return true;
+  }
+
+  // 排除obj1 obj2 任意一个不是对象或者null的情况
+  if (typeof obj1 !== "object" || obj1 === null || typeof obj2 !== "object" || obj2 === null) {
+    return false;
+  }
+
+  // 运行到此 obj1 obj2 一定是对象 并且都不是null 开始判断其属性
+  // 属性数量判断 不一样一定属性不相等
+  if (Object.keys(obj1).length !== Object.keys(obj2).length) return false;
+
+  // 逐个判断属性
+  for (const key in obj1) {
+    if (!Object.prototype.hasOwnProperty.call(obj2, key) || Object.is(obj1[key], obj2[key])) {
+      // 判断 key在obj1内 但是为undefined 但是在obj2中不存在的情况 或者 都存在 但是值不等的情况
+      return false;
+    }
+  }
+  return true;
+}
+
+/***/ }),
+/* 23 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -3480,7 +3503,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _flags__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(11);
 /* harmony import */ var _events_SyntheticEvent__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(6);
 /* harmony import */ var _workTag__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(12);
-/* harmony import */ var _hookEffectTags__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(19);
+/* harmony import */ var _hookEffectTags__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(21);
 
 
 
@@ -3884,7 +3907,7 @@ function saftyAttachRef(finishedWork) {
 }
 
 /***/ }),
-/* 23 */
+/* 24 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -3895,7 +3918,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _events_SyntheticEvent__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(6);
 /* harmony import */ var _workTag__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(12);
 /* harmony import */ var _fiberLanes__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(13);
-/* harmony import */ var _fiberContext__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(18);
+/* harmony import */ var _fiberContext__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(20);
 
 
 
@@ -4032,7 +4055,7 @@ function bubbleProperties(wip) {
 }
 
 /***/ }),
-/* 24 */
+/* 25 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -4081,7 +4104,7 @@ const scheduleMicroTask = typeof queueMicrotask === "function" ? queueMicrotask 
 const flushSyncCallbacks = () => scheduleMicroTask(_flushSyncCallbacks);
 
 /***/ }),
-/* 25 */
+/* 26 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -4089,10 +4112,13 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
 /* harmony import */ var _lib_react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
-/* harmony import */ var _components_Counter__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(26);
-/* harmony import */ var _components_Input__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(27);
-/* harmony import */ var _Pages_ContextDemo__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(28);
-/* harmony import */ var _Pages_Welcome__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(30);
+/* harmony import */ var _components_Counter__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(27);
+/* harmony import */ var _components_Input__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(28);
+/* harmony import */ var _components_MemoComp__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(29);
+/* harmony import */ var _Pages_ContextDemo__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(30);
+/* harmony import */ var _Pages_Welcome__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(32);
+
+
 
 
 
@@ -4127,7 +4153,10 @@ function SlowPost(_ref) {
 const PostsTab = () => {
   return /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement(_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].Fragment, null, Array.from({
     length: 50
-  }).map((_, i) => /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement(SlowPost, {
+  }).map((_, i) =>
+  /*#__PURE__*/
+  // @ts-ignore
+  _lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement(SlowPost, {
     key: i,
     index: i
   })));
@@ -4138,20 +4167,46 @@ const App = () => {
   const content = (() => {
     switch (type) {
       case "welcome":
-        return /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement(_Pages_Welcome__WEBPACK_IMPORTED_MODULE_4__["default"], null);
+        return /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement(_Pages_Welcome__WEBPACK_IMPORTED_MODULE_5__["default"], null);
       case "counter":
         return /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement(_components_Counter__WEBPACK_IMPORTED_MODULE_1__["default"], null);
       case "input":
         return /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement(_components_Input__WEBPACK_IMPORTED_MODULE_2__["default"], null);
       case "context":
-        return /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement(_Pages_ContextDemo__WEBPACK_IMPORTED_MODULE_3__["default"], null);
+        return /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement(_Pages_ContextDemo__WEBPACK_IMPORTED_MODULE_4__["default"], null);
       case "hugeData":
         return /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement(PostsTab, null);
       default:
         return null;
     }
   })();
-  return /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement(_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].Fragment, null);
+  return /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement(_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].Fragment, null, /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("nav", {
+    style: navContainerStyle
+  }, /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("ul", {
+    style: menuStyle
+  }, menuItems.map(_ref2 => {
+    let {
+      key,
+      label,
+      value
+    } = _ref2;
+    return /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("li", {
+      key: key,
+      onClick: () => ["hugeData", "context"].includes(value) ? startTransition(() => setType(value)) : setType(value),
+      style: menuItemStyle
+    }, label);
+  }))), /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("div", {
+    style: contentContainerStyle
+  }, isPending ? /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("div", {
+    style: {
+      textAlign: "center",
+      fontSize: "18px",
+      color: "#888",
+      marginTop: "20px"
+    }
+  }, "Loading Data...") : content), /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement(_components_MemoComp__WEBPACK_IMPORTED_MODULE_3__["default"], {
+    style: memoCompStyle
+  }));
 };
 const menuItems = [{
   key: "welcome-menu",
@@ -4220,7 +4275,7 @@ const memoCompStyle = {
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (App);
 
 /***/ }),
-/* 26 */
+/* 27 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -4233,132 +4288,98 @@ function Counter() {
   const [count, setCount] = (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.useState)(0);
   const testRef = (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.useRef)({});
   const domRef = (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
-  const countPlusTen = (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
-    return count + 10;
-  }, [count]);
-  const [c, setC] = (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.useState)(0);
-  setC(c + 1);
-  console.log("re", c);
-  return (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
-    style: cardContainerStyle
-  }, [
-  // 卡片容器
-  (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
-    style: cardStyle
-  }, [
-  // 创建按钮 +1
-  (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("button", {
-    key: "btn1",
-    style: buttonStyle("green"),
+  const countPlusTen = (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => count + 10, [count]);
+  console.log("re-render");
+  return /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      fontFamily: "'Roboto', sans-serif"
+    }
+  }, /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("div", {
+    style: {
+      width: "350px",
+      height: "400px",
+      backgroundColor: "white",
+      borderRadius: "12px",
+      boxShadow: "0 8px 16px rgba(0, 0, 0, 0.2)",
+      padding: "20px",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      textAlign: "center",
+      transition: "transform 0.3s ease, box-shadow 0.3s ease"
+    }
+  }, /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("button", {
+    style: {
+      backgroundColor: "#4CAF50",
+      color: "white",
+      padding: "15px 30px",
+      border: "none",
+      borderRadius: "8px",
+      cursor: "pointer",
+      fontSize: "18px",
+      transition: "transform 0.2s ease, background-color 0.3s ease",
+      boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+      margin: "10px",
+      textTransform: "uppercase"
+    },
     ref: domRef,
-    onClick: () => {
-      setCount(count + 1);
-    }
-  }, "+1"),
-  // 创建按钮 +2
-  (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("button", {
-    key: "btn2",
-    style: buttonStyle("blue"),
-    onClick: () => {
-      setCount(count + 2);
-    }
-  }, "+2"),
-  // 创建按钮 +3 (展示闭包陷阱)
-  (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("button", {
-    key: "btn3",
-    style: buttonStyle("red"),
+    onClick: () => setCount(count + 1)
+  }, "+1"), /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("button", {
+    style: {
+      backgroundColor: "#2196F3",
+      color: "white",
+      padding: "15px 30px",
+      border: "none",
+      borderRadius: "8px",
+      cursor: "pointer",
+      fontSize: "18px",
+      transition: "transform 0.2s ease, background-color 0.3s ease",
+      boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+      margin: "10px",
+      textTransform: "uppercase"
+    },
+    onClick: () => setCount(count + 2)
+  }, "+2"), /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("button", {
+    style: {
+      backgroundColor: "#FF5722",
+      color: "white",
+      padding: "15px 30px",
+      border: "none",
+      borderRadius: "8px",
+      cursor: "pointer",
+      fontSize: "18px",
+      transition: "transform 0.2s ease, background-color 0.3s ease",
+      boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+      margin: "10px",
+      textTransform: "uppercase"
+    },
     onClick: () => {
       setTimeout(() => {
-        setCount(count + 3);
+        setCount(prev => prev + 3);
       }, 1000);
     }
-  }, "+3 (展示闭包陷阱 点击后延迟更新 你可以点击之后迅速点击其他的)"),
-  // 计数器显示
-  (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
-    style: counterDisplayStyle
-  }, ["计数器：", (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("span", {
+  }, "+3 (\u5C55\u793A\u95ED\u5305\u9677\u9631 \u70B9\u51FB\u540E\u5EF6\u8FDF\u66F4\u65B0 \u4F60\u53EF\u4EE5\u70B9\u51FB\u4E4B\u540E\u8FC5\u901F\u70B9\u51FB\u5176\u4ED6\u7684)"), /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("div", {
+    style: {
+      marginTop: "30px",
+      fontSize: "24px",
+      color: "#333",
+      fontWeight: "500"
+    }
+  }, "\u8BA1\u6570\u5668\uFF1A", /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("span", {
     style: {
       fontWeight: "bold",
       fontSize: "36px",
       color: "#333"
     }
-  }, String(count))])])]);
+  }, count))));
 }
 
-// 按钮样式函数，根据颜色返回不同样式
-const buttonStyle = color => ({
-  backgroundColor: color === "green" ? "#4CAF50" : color === "blue" ? "#2196F3" : "#FF5722",
-  // 基于颜色传入不同背景色
-  color: "white",
-  padding: "15px 30px",
-  border: "none",
-  borderRadius: "8px",
-  cursor: "pointer",
-  fontSize: "18px",
-  transition: "transform 0.2s ease, background-color 0.3s ease",
-  boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-  margin: "10px",
-  display: "inline-block",
-  textAlign: "center",
-  width: "auto",
-  maxWidth: "200px",
-  lineHeight: "1.5",
-  fontWeight: "600",
-  textTransform: "uppercase",
-  letterSpacing: "0.5px",
-  opacity: 0.9,
-  ":hover": {
-    transform: "scale(1.1)",
-    backgroundColor: color === "green" ? "#45a049" : color === "blue" ? "#1e88e5" : "#e64a19"
-  },
-  ":active": {
-    transform: "scale(1)",
-    opacity: 1
-  }
-});
-
-// 整体卡片容器样式
-const cardContainerStyle = {
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  fontFamily: "'Roboto', sans-serif"
-};
-
-// 卡片样式
-const cardStyle = {
-  width: "350px",
-  height: "400px",
-  // 固定高度
-  backgroundColor: "white",
-  borderRadius: "12px",
-  // 圆角
-  boxShadow: "0 8px 16px rgba(0, 0, 0, 0.2)",
-  // 阴影效果
-  padding: "20px",
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  justifyContent: "center",
-  // 垂直居中
-  textAlign: "center",
-  transition: "transform 0.3s ease, box-shadow 0.3s ease",
-  ":hover": {
-    transform: "scale(1.05)",
-    boxShadow: "0 12px 24px rgba(0, 0, 0, 0.3)" // 鼠标悬停时阴影更强
-  }
-};
-
-// 计数器显示部分样式
-const counterDisplayStyle = {
-  marginTop: "30px",
-  fontSize: "24px",
-  color: "#333",
-  fontWeight: "500"
-};
-
 /***/ }),
-/* 27 */
+/* 28 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -4373,10 +4394,9 @@ function SlowPost(_ref) {
   } = _ref;
   const startTime = performance.now();
   while (performance.now() - startTime < 1) {}
-  return (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("h3", {
+  return /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("h3", {
     style: {
       color: "#61dafb",
-      // React 蓝色
       fontSize: "28px",
       fontWeight: "700",
       marginBottom: "10px"
@@ -4389,86 +4409,81 @@ const PostsTab = function PostsTab(_ref2) {
   } = _ref2;
   const items = [];
   for (let i = 0; i < len * 100; i++) {
-    items.push((0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)(SlowPost, {}));
+    //@ts-ignore
+    items.push(/*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement(SlowPost, {
+      key: i,
+      index: i
+    }));
   }
-  return items;
+  return /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement(_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].Fragment, null, items);
 };
 function Input() {
   console.log("input re");
   const [appMessage, setAppMessage] = (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.useState)("测试输入框内容同步");
   const deferedAppMessage = (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.useDeferedValue)(appMessage);
-  return (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
-    style: containerStyle
-  }, (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("input", {
-    onInput: e => {
-      setAppMessage(e.target.value);
-    },
+  return /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("div", {
+    style: {
+      width: "100%",
+      maxWidth: "600px",
+      margin: "0 auto",
+      padding: "20px",
+      backgroundColor: "#fff",
+      borderRadius: "12px",
+      boxShadow: "0 10px 30px rgba(0, 0, 0, 0.1)",
+      fontFamily: "'Roboto', sans-serif"
+    }
+  }, /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("input", {
+    onInput: e => setAppMessage(e.target.value),
     value: appMessage,
-    style: inputStyle,
-    placeholder: "请输入内容"
-  }), (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
+    style: {
+      display: "block",
+      width: "100%",
+      padding: "16px",
+      fontSize: "18px",
+      borderRadius: "8px",
+      border: "1px solid #ccc",
+      boxSizing: "border-box",
+      backgroundColor: "#f9f9f9",
+      color: "#333",
+      transition: "border-color 0.3s ease, box-shadow 0.3s ease",
+      outline: "none",
+      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+      marginBottom: "20px"
+    },
+    placeholder: "\u8BF7\u8F93\u5165\u5185\u5BB9"
+  }), /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("div", {
     style: {
       marginTop: "20px",
       fontSize: "18px",
       color: "#333"
     }
-  }, appMessage)
-  // createElement(
-  //   "div",
-  //   { style: { color: "gray" } },
-  //   "defered:" + deferedAppMessage
-  // ),
-  // createElement(PostsTab, { len: deferedAppMessage.length })
-  );
+  }, appMessage));
 }
 
-// 输入框样式
-const inputStyle = {
-  display: "block",
-  width: "100%",
-  padding: "16px",
-  fontSize: "18px",
-  borderRadius: "8px",
-  // 圆角
-  border: "1px solid #ccc",
-  // 边框颜色
-  boxSizing: "border-box",
-  backgroundColor: "#f9f9f9",
-  // 浅灰背景
-  color: "#333",
-  // 深色文本
-  transition: "border-color 0.3s ease, box-shadow 0.3s ease",
-  // 平滑过渡效果
-  outline: "none",
-  // 去掉默认的输入框高亮
-  boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-  // 阴影效果
-  marginBottom: "20px" // 底部间距
-};
+/***/ }),
+/* 29 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
-// 输入框聚焦时样式
-const inputFocusStyle = {
-  borderColor: "#61dafb",
-  // 聚焦时的边框颜色
-  boxShadow: "0 0 8px rgba(0, 122, 255, 0.4)" // 聚焦时的阴影
-};
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _lib_react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
 
-// 容器样式
-const containerStyle = {
-  width: "100%",
-  maxWidth: "600px",
-  margin: "0 auto",
-  padding: "20px",
-  backgroundColor: "#fff",
-  borderRadius: "12px",
-  // 卡片的圆角
-  boxShadow: "0 10px 30px rgba(0, 0, 0, 0.1)",
-  // 外部阴影
-  fontFamily: "'Roboto', sans-serif"
-};
+const MemoComp = (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.memo)(() => {
+  console.log("memo rerender!");
+  return /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("div", {
+    style: {
+      backgroundColor: "lightgray",
+      color: "white",
+      fontSize: "16px"
+    }
+  }, "MEMO COMPONENT \uFF08when menu change, this component never rerender\uFF09");
+});
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (MemoComp);
 
 /***/ }),
-/* 28 */
+/* 30 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -4476,9 +4491,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "default": () => (/* binding */ ContextDemo)
 /* harmony export */ });
 /* harmony import */ var _lib_react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
-/* harmony import */ var _lib_react_context__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(29);
-/* harmony import */ var _lib_share_ReactSymbols__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(2);
-
+/* harmony import */ var _lib_react_context__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(31);
 
 
 const Context1 = (0,_lib_react_context__WEBPACK_IMPORTED_MODULE_1__["default"])("CONTEXT_1_INIT_VALUE");
@@ -4491,112 +4504,110 @@ function ContextReader(_ref) {
   const context1Value = (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.useContext)(Context1);
   const context2Value = (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.useContext)(Context2);
   const context3Value = (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.useContext)(Context3);
-  return (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
+  return /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("div", {
     style: {
       border: "1px solid black",
       height: "100px"
     }
-  }, [(0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("h3", {
+  }, /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("h3", {
     style: {
       color: "black",
       textAlign: "center"
     }
-  }, [title]), (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
+  }, title), /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("div", {
     style: {
       color: "green"
     }
-  }, [`Context1 value=${context1Value}`]), (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
+  }, "Context1 value=", context1Value), /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("div", {
     style: {
       color: "blue"
     }
-  }, [`Context2 value=${context2Value}`]), (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
+  }, "Context2 value=", context2Value), /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("div", {
     style: {
       color: "yellow"
     }
-  }, [`Context3 value=${context3Value}`])]);
+  }, "Context3 value=", context3Value));
 }
 function Provider1Component(_ref2) {
   let {
     children
   } = _ref2;
-  return (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
+  return /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("div", {
     style: {
       backgroundColor: "lightblue",
       width: "550px"
     }
-  }, [(0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("h3", {
+  }, /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("h3", {
     style: {
       color: "white",
       textAlign: "center"
     }
-  }, "Provider1"), (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)(Context1.Provider, {
+  }, "Provider1"), /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement(Context1.Provider, {
     value: "PROVIDER1 NEW VALUE"
-  }, [(0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)(ContextReader, {
-    title: "Provider1内层Context结果"
-  }), children])]);
+  }, /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement(ContextReader, {
+    title: "Provider1\u5185\u5C42Context\u7ED3\u679C"
+  }), children));
 }
 function Provider2Component(_ref3) {
   let {
     children
   } = _ref3;
   const [provider2Value, setProvider2Value] = (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.useState)("PROVIDER2 NEW VALUE");
-  return (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
+  return /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("div", {
     style: {
       backgroundColor: "lightgray",
       width: "500px"
     }
-  }, [(0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("h3", {
+  }, /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("h3", {
     style: {
       color: "white",
       textAlign: "center"
     }
-  }, "Provider2"), (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("button", {
+  }, "Provider2"), /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("button", {
     style: {
-      backgroundColor: 'red',
-      cursor: 'pointer'
+      backgroundColor: "red",
+      cursor: "pointer"
     },
-    onClick: () => {
-      setProvider2Value(`当前时间为: ${new Date()}`);
-    }
-  }, "点击修改Provider2 value"), (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)(Context2.Provider, {
+    onClick: () => setProvider2Value(`当前时间为: ${new Date()}`)
+  }, "\u70B9\u51FB\u4FEE\u6539Provider2 value"), /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement(Context2.Provider, {
     value: provider2Value
-  }, [(0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)(ContextReader, {
-    title: "Provider2内层Context结果"
-  }), children])]);
+  }, /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement(ContextReader, {
+    title: "Provider2\u5185\u5C42Context\u7ED3\u679C"
+  }), children));
 }
 function Provider3Component(_ref4) {
   let {
     children
   } = _ref4;
-  return (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
+  return /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("div", {
     style: {
       backgroundColor: "lightgreen",
       width: "400px"
     }
-  }, [(0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("h3", {
+  }, /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("h3", {
     style: {
       color: "white",
       textAlign: "center"
     }
-  }, "Provider3"), (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)(Context3.Provider, {
+  }, "Provider3"), /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement(Context3.Provider, {
     value: "PROVIDER3 NEW VALUE"
-  }, [(0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)(ContextReader, {
-    title: "最内层Context结果"
-  }), children])]);
+  }, /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement(ContextReader, {
+    title: "\u6700\u5185\u5C42Context\u7ED3\u679C"
+  }), children));
 }
 function ContextDemo() {
-  return (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)(_lib_share_ReactSymbols__WEBPACK_IMPORTED_MODULE_2__.REACT_FRAGMENT_TYPE, {}, [(0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
+  return /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement(_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].Fragment, null, /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("div", {
     style: {
       backgroundColor: "pink",
       width: "600px"
     }
-  }, [(0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)(ContextReader, {
-    title: "最外层Context结果"
-  }), (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)(Provider1Component, {}, [(0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)(Provider2Component, {}, [(0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)(Provider3Component, {})])])])]);
+  }, /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement(ContextReader, {
+    title: "\u6700\u5916\u5C42Context\u7ED3\u679C"
+  }), /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement(Provider1Component, null, /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement(Provider2Component, null, /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement(Provider3Component, null)))));
 }
 
 /***/ }),
-/* 29 */
+/* 31 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -4634,50 +4645,53 @@ function createContext(defaultValue) {
 }
 
 /***/ }),
-/* 30 */
+/* 32 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (/* binding */ WelcomePage)
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
 /* harmony import */ var _lib_react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
 
-function WelcomePage() {
-  return (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
+const WelcomePage = () => {
+  return /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("div", {
     style: pageStyle
-  }, (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
+  }, /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("div", {
     style: leftPanelStyle
-  }, (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("h1", {
+  }, /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("h1", {
     style: titleStyle
-  }, "Welcome to My-React!"), (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("p", {
+  }, "Welcome to My-React!"), /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("p", {
     style: subtitleStyle
-  }, "A lightweight React clone with core features like createElement, useState, useEffect, and more."), (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
+  }, "A lightweight React clone with core features like createElement, useState, useEffect, and more."), /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("div", {
     style: sectionStyle
-  }, (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("h2", {
+  }, /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("h2", {
     style: sectionTitleStyle
-  }, "What is My-React?"), (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("p", {
+  }, "What is My-React?"), /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("p", {
     style: sectionTextStyle
-  }, "My-React is a lightweight clone of React. It includes essential features like virtual DOM creation, state management with hooks, and task scheduling. The main goal is to understand the core principles behind React and its rendering lifecycle."))), (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
+  }, "My-React is a lightweight clone of React. It includes essential features like virtual DOM creation, state management with hooks, and task scheduling. The main goal is to understand the core principles behind React and its rendering lifecycle."))), /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("div", {
     style: rightPanelStyle
-  }, (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("h2", {
+  }, /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("h2", {
     style: sectionTitleStyle
-  }, "Features"), (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("ul", {
+  }, "Features"), /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("ul", {
     style: featureListStyle
-  }, (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("li", null, "Virtual DOM creation with createElement"), (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("li", null, "Support for hooks like useState, useEffect, useTransition"), (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("li", null, "Component management for functional and class components"), (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("li", null, "Task scheduling with the scheduler for better performance")), (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
+  }, /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("li", null, "Virtual DOM creation with createElement"), /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("li", null, "Support for hooks like useState, useEffect, useTransition"), /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("li", null, "Component management for functional and class components"), /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("li", null, "Task scheduling with the scheduler for better performance")), /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("div", {
     style: footerStyle
-  }, (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("h3", {
+  }, /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("h3", {
     style: footerTitleStyle
-  }, "Get Started"), (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("p", {
+  }, "Get Started"), /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("p", {
     style: footerTextStyle
-  }, "To get started, follow the setup instructions below:"), (0,_lib_react__WEBPACK_IMPORTED_MODULE_0__.createElement)("pre", {
+  }, "To get started, follow the setup instructions below:"), /*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement("pre", {
     style: codeBlockStyle
-  }, "1. Install dependencies:\n" + "   npm install\n\n" + "2. Start the project:\n" + "   npm start\n"))));
-}
+  }, `1. Install dependencies:
+   npm install
+
+2. Start the project:
+   npm start`))));
+};
 const pageStyle = {
   display: "flex",
   flexDirection: "row",
-  // 横向布局
   width: "100%",
   backgroundColor: "#f4f6f8",
   justifyContent: "space-between",
@@ -4686,7 +4700,6 @@ const pageStyle = {
 };
 const leftPanelStyle = {
   flex: 1,
-  // 左侧占据 50%
   padding: "40px",
   backgroundColor: "#61dafb",
   borderRadius: "8px",
@@ -4695,7 +4708,6 @@ const leftPanelStyle = {
 };
 const rightPanelStyle = {
   flex: 1,
-  // 右侧占据 50%
   padding: "40px",
   backgroundColor: "#fff",
   borderRadius: "8px",
@@ -4704,7 +4716,7 @@ const rightPanelStyle = {
 };
 const titleStyle = {
   fontSize: "36px",
-  fontWeight: "700"
+  fontWeight: 700
 };
 const subtitleStyle = {
   fontSize: "20px",
@@ -4715,7 +4727,7 @@ const sectionStyle = {
 };
 const sectionTitleStyle = {
   fontSize: "28px",
-  fontWeight: "600",
+  fontWeight: 600,
   marginBottom: "15px"
 };
 const sectionTextStyle = {
@@ -4725,14 +4737,13 @@ const sectionTextStyle = {
 const footerStyle = {
   marginTop: "40px",
   backgroundColor: "#4CAF50",
-  // Green background for footer
   padding: "20px",
   borderRadius: "8px",
   color: "#fff"
 };
 const footerTitleStyle = {
   fontSize: "24px",
-  fontWeight: "600"
+  fontWeight: 600
 };
 const footerTextStyle = {
   fontSize: "18px"
@@ -4753,6 +4764,7 @@ const featureListStyle = {
   fontSize: "16px",
   color: "#444"
 };
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (WelcomePage);
 
 /***/ })
 /******/ 	]);
@@ -4817,16 +4829,15 @@ var __webpack_exports__ = {};
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _lib_react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
 /* harmony import */ var _lib_react_dom__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(5);
-/* harmony import */ var _App__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(25);
+/* harmony import */ var _App__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(26);
 
 
-console.log(_lib_react__WEBPACK_IMPORTED_MODULE_0__)
 
 const root = (0,_lib_react_dom__WEBPACK_IMPORTED_MODULE_1__.createRoot)(document.querySelector("#root-master"));
-
+console.log(/*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement(_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].Fragment, null));
 root.render(/*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].createElement(_App__WEBPACK_IMPORTED_MODULE_2__["default"], null));
 })();
 
 /******/ })()
 ;
-//# sourceMappingURL=main-075d434e-bundle.js.map
+//# sourceMappingURL=main-3dae5170-bundle.js.map

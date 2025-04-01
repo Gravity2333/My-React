@@ -168,7 +168,7 @@ export function propagateContextChange(
     // 回溯
     while (nextFiber.sibling === null) {
       if (nextFiber.return === null || nextFiber.return === wip) {
-        break;
+        return // 直接return 跳出所有循环
       }
       nextFiber = nextFiber.return;
     }
