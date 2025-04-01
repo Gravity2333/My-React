@@ -3408,7 +3408,7 @@ function propagateContextChange(wip, context, renderLane) {
     // 回溯
     while (nextFiber.sibling === null) {
       if (nextFiber.return === null || nextFiber.return === wip) {
-        break;
+        return; // 直接return 跳出所有循环
       }
       nextFiber = nextFiber.return;
     }
@@ -4840,4 +4840,4 @@ root.render(/*#__PURE__*/_lib_react__WEBPACK_IMPORTED_MODULE_0__["default"].crea
 
 /******/ })()
 ;
-//# sourceMappingURL=main-3dae5170-bundle.js.map
+//# sourceMappingURL=main-db94282a-bundle.js.map
