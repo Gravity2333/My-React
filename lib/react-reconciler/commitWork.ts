@@ -21,6 +21,7 @@ import {
 import { FCUpdateQueue } from "./updateQueue";
 import { Effect, EffectCallback } from "./fiberHooks";
 import { HookEffectTag, HookHasEffect } from "./hookEffectTags";
+import { removeLanes } from "./fiberLanes";
 
 /** commit回调类型 */
 type CommitCallback = (finishedWork: FiberNode, root: FiberRootNode) => void;
@@ -88,6 +89,8 @@ const commitMutationEffectsOnFiber: CommitCallback = (finishedWork, root) => {
   if ((flags & PassiveEffect) !== NoFlags) {
     // 存在被动副作用
     commitPassiveEffect(finishedWork, root, "update");
+    // 去掉标记
+    finishedWork.lanes = removeLanes(finishedWork.lanes,PassiveEffect)
   }
 
   // 卸载Ref 只有hostComponent需要卸载
