@@ -14,7 +14,12 @@ function ContextReader({ title }: { title: string }) {
     <div style={{ border: "1px solid black", height: "100px" }}>
       <h3 style={{ color: "black", textAlign: "center" }}>{title}</h3>
       <div style={{ color: "green" }}>Context1 value={context1Value}</div>
-      <div style={{ color: "blue" }}>Context2 value={context2Value}</div>
+      {/* @ts-ignore */}
+      <Context2.Consumer>
+        {(consumer) => {
+          return <div style={{ color: "blue" }}>Context2 value={consumer}</div>;
+        }}
+      </Context2.Consumer>
       <div style={{ color: "yellow" }}>Context3 value={context3Value}</div>
     </div>
   );
@@ -34,7 +39,9 @@ function Provider1Component({ children }: { children?: any }) {
 }
 
 function Provider2Component({ children }: { children?: any }) {
-  const [provider2Value, setProvider2Value] = useState<string>("PROVIDER2 NEW VALUE");
+  const [provider2Value, setProvider2Value] = useState<string>(
+    "PROVIDER2 NEW VALUE"
+  );
   return (
     <div style={{ backgroundColor: "lightgray", width: "500px" }}>
       <h3 style={{ color: "white", textAlign: "center" }}>Provider2</h3>
@@ -44,7 +51,7 @@ function Provider2Component({ children }: { children?: any }) {
       >
         点击修改Provider2 value
       </button>
-       {/* @ts-ignore */}
+      {/* @ts-ignore */}
       <Context2.Provider value={provider2Value}>
         <ContextReader title="Provider2内层Context结果" />
         {children}
@@ -57,7 +64,7 @@ function Provider3Component({ children }: { children?: any }) {
   return (
     <div style={{ backgroundColor: "lightgreen", width: "400px" }}>
       <h3 style={{ color: "white", textAlign: "center" }}>Provider3</h3>
-       {/* @ts-ignore */}
+      {/* @ts-ignore */}
       <Context3.Provider value="PROVIDER3 NEW VALUE">
         <ContextReader title="最内层Context结果" />
         {children}

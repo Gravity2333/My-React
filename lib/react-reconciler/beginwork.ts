@@ -6,6 +6,7 @@ import {
 import { FiberNode } from "./fiber";
 import { ReactElementChildren } from "../react";
 import {
+  ContextConsumer,
   ContextProvider,
   Fragment,
   FunctionComponent,
@@ -98,6 +99,8 @@ export function beginWork(wip: FiberNode, renderLane: Lane): FiberNode | null {
       return updateFunctionComponent(wip, wip.type as Function, renderLane);
     case ContextProvider:
       return updateContextProvider(wip, renderLane);
+    case ContextConsumer:
+      return updateContextConsumer(wip, renderLane);
     default:
       console.warn("beginWork未实现的类型", wip.tag);
       break;
@@ -294,4 +297,19 @@ function updateContextProvider(wip: FiberNode, renderLane: Lane) {
   // reconcile child
   reconcileChildren(wip, pendingProps.children);
   return wip.child;
+}
+
+/** 更新Consumer */
+function updateContextConsumer(wip: FiberNode, renderLane: Lane) {
+  const context = wip.type?._context;
+  const pendingProps = wip.pendingProps || {};
+  const consumerFn = pendingProps.children;
+
+  if (typeof consumerFn === "function") {
+    const children = consumerFn(context?._currentValue);
+    reconcileChildren(wip, children);
+    return wip.child;
+  }
+
+  return null;
 }

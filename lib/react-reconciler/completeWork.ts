@@ -2,6 +2,7 @@ import { FiberNode } from "./fiber";
 import { NoFlags, Ref, Update } from "./flags";
 import { updateFiberProps } from "../events/SyntheticEvent";
 import {
+  ContextConsumer,
   ContextProvider,
   Fragment,
   FunctionComponent,
@@ -74,6 +75,7 @@ export function completeWork(wip: FiberNode) {
     case FunctionComponent:
     case Fragment:
     case MemoComponent:
+    case ContextConsumer:
       bubbleProperties(wip);
       return null;
     default:
