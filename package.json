@@ -4,8 +4,9 @@
   "description": "一个自己实现的React 简化了关键步骤的实现 清晰易懂",
   "main": "index.js",
   "scripts": {
-    "start": "npx webpack-dev-server",
-    "build": "npx webpack",
+    "start": "npx webpack-dev-server --config ./config/webpack.dev.js",
+    "start: demo": "npx webpack-dev-server --config ./config/webpack.dev.js",
+    "build": "npx webpack --config ./config/webpack.build.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
