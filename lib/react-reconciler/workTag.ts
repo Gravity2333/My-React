@@ -22,7 +22,9 @@ export const Fragment = 7; // 111
 export const ContextProvider = 8; //1000
 export const ContextConsumer = 9; //1001
 
+// Suspense组件
 export const SuspenseComponent = 13;
+// 离屏组件
 export const OffscreenComponent = 14;
 
 export const LazyComponent = 16;

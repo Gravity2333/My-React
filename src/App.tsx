@@ -1,4 +1,4 @@
-import React, { useState, useTransition } from "../lib/react";
+import React, { Suspense, useState, useTransition } from "../lib/react";
 import Counter from "./components/Counter";
 import Input from "./components/Input";
 import MemoComp from "./components/MemoComp";
@@ -72,6 +72,10 @@ const App = () => {
 
   return (
     <>
+      {/* @ts-ignore */}
+      <Suspense fallback={"loading..."}>
+        <div>TEST SUSPENSE</div>
+      </Suspense>
       <nav style={navContainerStyle}>
         <ul style={menuStyle}>
           {menuItems.map(({ key, label, value }) => (

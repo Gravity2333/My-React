@@ -1,5 +1,5 @@
-import { FiberNode } from "./fiber";
-import { NoFlags, Ref, Update } from "./flags";
+import { FiberNode, OffscreenProps } from "./fiber";
+import { NoFlags, Ref, Update, Visibility } from "./flags";
 import { updateFiberProps } from "../events/SyntheticEvent";
 import {
   ContextConsumer,
@@ -10,6 +10,8 @@ import {
   HostRoot,
   HostText,
   MemoComponent,
+  OffscreenComponent,
+  SuspenseComponent,
 } from "./workTag";
 import { NoLane } from "./fiberLanes";
 import { popContext } from "./fiberContext";
@@ -76,8 +78,38 @@ export function completeWork(wip: FiberNode) {
     case Fragment:
     case MemoComponent:
     case ContextConsumer:
+    case OffscreenComponent:
       bubbleProperties(wip);
       return null;
+    case SuspenseComponent:
+      // 处理Suspense的逻辑
+      /** 为什么不在Offscreen中处理? 因为fallback的情况下 completeWork不会走offscreenComponent */
+      /** 检查 mode是否变化 */
+      const current = wip.alternate;
+      const offscreenFiber = wip.child;
+      if (current) {
+        // update
+        const currentOffscreenFiber = current.child;
+        // 新Fiber的Offscreen是否隐藏
+        const isHidden =
+          (offscreenFiber.pendingProps as OffscreenProps).mode === "hidden";
+        // 当前Fiber的Offscreen是否隐藏
+        const wasHidden =
+          (currentOffscreenFiber.memorizedProps as OffscreenProps).mode ===
+          "hidden";
+        // mode变化,打标记
+        if (isHidden !== wasHidden) {
+          offscreenFiber.flags |= Visibility;
+          bubbleProperties(offscreenFiber);
+        }
+      } else {
+        // mount, 打标记
+        offscreenFiber.flags |= Visibility;
+        bubbleProperties(offscreenFiber);
+      }
+
+      // 冒泡
+      bubbleProperties(wip);
     default:
       console.warn("未处理的completeWork类型！");
   }

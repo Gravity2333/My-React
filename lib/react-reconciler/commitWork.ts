@@ -10,6 +10,7 @@ import {
   Placement,
   Ref,
   Update,
+  Visibility,
 } from "./flags";
 import { updateFiberProps } from "../events/SyntheticEvent";
 import {
@@ -17,6 +18,7 @@ import {
   HostComponent,
   HostRoot,
   HostText,
+  OffscreenComponent,
 } from "./workTag";
 import { FCUpdateQueue } from "./updateQueue";
 import { Effect, EffectCallback } from "./fiberHooks";
@@ -90,7 +92,7 @@ const commitMutationEffectsOnFiber: CommitCallback = (finishedWork, root) => {
     // 存在被动副作用
     commitPassiveEffect(finishedWork, root, "update");
     // 去掉标记
-    finishedWork.lanes = removeLanes(finishedWork.lanes,PassiveEffect)
+    finishedWork.lanes = removeLanes(finishedWork.lanes, PassiveEffect);
   }
 
   // 卸载Ref 只有hostComponent需要卸载
@@ -102,6 +104,18 @@ const commitMutationEffectsOnFiber: CommitCallback = (finishedWork, root) => {
     }
 
     // 卸载之后由于可能还会加载ref 所以这里的flag不能~Ref
+  }
+
+  // 处理 offscreenComponent
+  if (
+    finishedWork.tag === OffscreenComponent &&
+    (flags & Visibility) !== NoFlags
+  ) {
+    hideOrUnhideAllChilden(
+      finishedWork,
+      finishedWork.memorizedProps.mode === "hidden"
+    );
+    finishedWork.flags &= ~Visibility;
   }
 };
 
@@ -158,6 +172,35 @@ function commitUpdate(fiber: FiberNode) {
     fiber.stateNode.nodeValue = fiber.memorizedProps.content;
   } else {
     updateFiberProps(fiber.stateNode, fiber.memorizedProps);
+  }
+}
+
+/** 隐藏 / 不隐藏 所有的offscreen的子children */
+function hideOrUnhideAllChilden(wip: FiberNode, hidden: boolean) {
+  let child = wip.child;
+  while (child !== null) {
+    if (child.tag === HostComponent) {
+      if (hidden) {
+        (child.stateNode as HTMLElement).style?.setProperty(
+          "display",
+          "none",
+          "important"
+        );
+      } else {
+        (child.stateNode as HTMLElement).style?.setProperty("display", "");
+      }
+    } else if (child.tag === HostText) {
+      if (hidden) {
+        (child.stateNode as HTMLElement).nodeValue = "";
+      } else {
+        (child.stateNode as HTMLElement).nodeValue =
+          child.memorizedProps.content;
+      }
+    } else {
+      // 都不是 Host节点 递归处理
+      hideOrUnhideAllChilden(child, hidden);
+    }
+    child =child.sibling
   }
 }
 
@@ -259,16 +302,19 @@ function deleteNodeFromContainer(
   root: FiberRootNode
 ) {
   if (!container || !childToDelete) return;
-  if ((childToDelete.tag === HostComponent || childToDelete.tag === HostText)&&childToDelete.stateNode!==null) {
+  if (
+    (childToDelete.tag === HostComponent || childToDelete.tag === HostText) &&
+    childToDelete.stateNode !== null
+  ) {
     /** 如果是host节点，直接删除即可 */
-    if(container.contains(childToDelete.stateNode)){
+    if (container.contains(childToDelete.stateNode)) {
       container.removeChild(childToDelete.stateNode);
     }
-  
+
     // 删除时，卸载Ref
     if (childToDelete.tag === HostComponent) {
       // HostComponent删除的时候 需要卸载Ref
-      
+
       saftyDetachRef(childToDelete);
     }
   } else {

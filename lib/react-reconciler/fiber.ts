@@ -12,6 +12,7 @@ import {
   REACT_FRAGMENT_TYPE,
   REACT_MEMO_TYPE,
   REACT_PROVIDER_TYPE,
+  REACT_SUSPENSE_TYPE,
 } from "../share/ReactSymbols";
 import { UpdateQueue } from "./updateQueue";
 import {
@@ -21,6 +22,8 @@ import {
   FunctionComponent,
   HostComponent,
   MemoComponent,
+  OffscreenComponent,
+  SuspenseComponent,
   WorkTag,
 } from "./workTag";
 import { Effect } from "./fiberHooks";
@@ -248,6 +251,8 @@ export function createFiberFromElement(element: ReactElement): FiberNode {
   } else if (element.type === REACT_FRAGMENT_TYPE || element.type === void 0) {
     fiberTag = Fragment;
     return createFiberFromFragment(element.props.children, element.key);
+  } else if (element.type === REACT_SUSPENSE_TYPE) {
+    fiberTag = SuspenseComponent;
   }
 
   const fiber = new FiberNode(fiberTag, pendingProps, element.key);
@@ -263,4 +268,17 @@ export function createFiberFromFragment(
 ) {
   const fragmentFiber = new FiberNode(Fragment, elemenst, key);
   return fragmentFiber;
+}
+
+export interface OffscreenProps {
+  /** offscreen组件是否可见 */
+  mode: "visible" | "hidden";
+  /** 其下绑定的primaryChildren */
+  children: any;
+}
+
+/** 创建Offscreen组件的Fiber OffScreen没有对应的Element 需要通过这个函数创建 */
+export function createFiberFromOffscreen(props: OffscreenProps) {
+  const fiber = new FiberNode(OffscreenComponent, props, null);
+  return fiber;
 }

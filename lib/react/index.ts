@@ -142,6 +142,12 @@ const React = {
   useContext,
   useRef,
   useMemo,
-}
+};
 
-export default React
+export default React;
+export {
+  // 导出Suspense
+  REACT_SUSPENSE_TYPE as Suspense,
+  // 导出Fragment
+  REACT_FRAGMENT_TYPE as Fragment,
+} from "../share/ReactSymbols";
