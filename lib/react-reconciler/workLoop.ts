@@ -28,6 +28,11 @@ import scheduler, { PriorityLevel } from "../scheduler";
 import { flushSyncCallbacks, scheduleSyncCallback } from "./syncTaskQueue";
 import { HostRoot } from "./workTag";
 import { HookHasEffect, Passive } from "./hookEffectTags";
+import { getSuspendedThenable, SuspenseException } from "./thenable";
+import { Thenable } from "../share/ReactTypes";
+import { resetHookOnUnwind } from "./fiberHooks";
+import { handleThrownException } from "./fiberThown";
+import { unwindWork } from "./unwindWork";
 
 /** 工作中间状态 */
 // 工作中的状态
@@ -48,6 +53,23 @@ let workInProgress: FiberNode = null;
 /** 表示当前正在render阶段对应的任务对应的lane 用来在任务中断后重启判断跳过初始化流程 */
 let wipRootRenderLane: Lane = NoLane;
 
+/** == 挂起状态 ==  */
+/** 没有被挂起 */
+const NotSuspended = 0;
+/** 因为错误被挂起 */
+const SuspendedOnError = 1;
+/** 因为请求数据被挂起 */
+const SuspendedOnData = 2;
+
+type SuspenedReason =
+  | typeof NotSuspended
+  | typeof SuspendedOnError
+  | typeof SuspendedOnData;
+
+/** wip被suspense的原因 */
+let workInProgressSuspendedReason: SuspenedReason = NotSuspended;
+
+let workInProgressSuspenedValue: any = null;
 /**
  * 从当前fiberNode找到root节点 并且更新沿途fiber的childLanes
  * @param fiberNode
@@ -189,6 +211,10 @@ function prepareRefreshStack(root: FiberRootNode, lane: Lane) {
    */
 
   workInProgress = createWorkInProgress(root.current, {});
+
+  /** 重置错误 */
+  workInProgressSuspendedReason = NotSuspended;
+  workInProgressSuspenedValue = null;
 }
 
 function completeUnitOfWork(fiber: FiberNode) {
@@ -258,7 +284,7 @@ export function renderRoot(
   let workLoopRetryTimes = 0;
 
   if (wipRootRenderLane !== lane) {
-    console.log('中断')
+    console.log("中断");
     // 避免重新进行初始化
     /** 先进行准备初始化 */
     prepareRefreshStack(root, lane);
@@ -266,6 +292,24 @@ export function renderRoot(
 
   while (true) {
     try {
+      // 处理错误
+      if (
+        workInProgressSuspendedReason !== NotSuspended &&
+        workInProgress !== null
+      ) {
+        workInProgressSuspendedReason = NotSuspended;
+        const thrownValue = workInProgressSuspenedValue;
+        workInProgressSuspenedValue = null;
+
+        // 处理 被抛出的一场 和 unwind
+        handleThrownAndUnwind(
+          root,
+          workInProgress,
+          thrownValue,
+          wipRootRenderLane
+        );
+      }
+     
       // 开启时间片 scheduler调度
       shouldTimeSlice ? workConcurrentLoop() : workLoop();
       break;
@@ -276,6 +320,7 @@ export function renderRoot(
         console.warn("workLoop执行错误！", e);
         break;
       }
+      handleThrow(e);
     }
   }
 
@@ -353,4 +398,36 @@ function flushPassiveEffect(pendingPassiveEffect: PendingPassiveEffect) {
     commitHookEffectListCreate(Passive | HookHasEffect, updateEffect);
   });
   pendingPassiveEffect.update = [];
+}
+
+/** 处理异常抛出 */
+function handleThrow(thrownValue: any) {
+  if (thrownValue === SuspenseException) {
+    // wakeable
+    workInProgressSuspendedReason = SuspendedOnData;
+    workInProgressSuspenedValue = getSuspendedThenable();
+  } else {
+    // error boundary
+    workInProgressSuspendedReason = SuspendedOnError;
+    workInProgressSuspenedValue = thrownValue;
+  }
+}
+
+/** 处理 hook重置 唤醒 调用unwind */
+function handleThrownAndUnwind(
+  root: FiberRootNode,
+  wip: FiberNode,
+  thrownValue: Thenable,
+  lane: Lane
+) {
+  // 重置hooks
+  resetHookOnUnwind();
+  // 注册 抛出异常
+  handleThrownException(root, thrownValue, lane);
+  // unwindwork
+  const next = unwindWork(wip);
+  
+  if (next) {
+    workInProgress = next;
+  }
 }

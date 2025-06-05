@@ -6,7 +6,7 @@
 
 import { EffectCallback, HookDeps } from "../react-reconciler/fiberHooks";
 import { REACT_ELEMENT_TYPE } from "../share/ReactSymbols";
-import { Context } from "./context";
+import { Context, Usable } from "../share/ReactTypes";
 import { currentDispatcher, resolveDispatcher } from "./currentDispatcher";
 
 export type ReactElementType = any;
@@ -128,6 +128,11 @@ export function useCallback<T>(callback: T, deps: HookDeps) {
 export function useContext<T>(context: Context<T>) {
   const dispatcher = resolveDispatcher();
   return dispatcher.useContext<T>(context);
+}
+
+export function use<T>(usable: Usable<T>) {
+  const dispatcher = resolveDispatcher();
+  return dispatcher.use<T>(usable);
 }
 
 export * from "./memo";

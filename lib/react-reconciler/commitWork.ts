@@ -113,7 +113,7 @@ const commitMutationEffectsOnFiber: CommitCallback = (finishedWork, root) => {
   ) {
     hideOrUnhideAllChilden(
       finishedWork,
-      finishedWork.memorizedProps.mode === "hidden"
+      finishedWork.pendingProps?.mode === "hidden"
     );
     finishedWork.flags &= ~Visibility;
   }

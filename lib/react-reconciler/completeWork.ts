@@ -15,6 +15,7 @@ import {
 } from "./workTag";
 import { NoLane } from "./fiberLanes";
 import { popContext } from "./fiberContext";
+import { popSuspenseFiber } from "./suspenseContext";
 
 /** 归的过程 主要逻辑有
  * 1. 不能复用的DOM创建 赋给stateNode
@@ -107,7 +108,8 @@ export function completeWork(wip: FiberNode) {
         offscreenFiber.flags |= Visibility;
         bubbleProperties(offscreenFiber);
       }
-
+      // 维护 suspense上下文
+      popSuspenseFiber();
       // 冒泡
       bubbleProperties(wip);
     default:

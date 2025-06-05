@@ -1,5 +1,6 @@
-import { Context } from "../react/context";
 import { currentDispatcher } from "../react/currentDispatcher";
+import { REACT_CONTEXT_TYPE } from "../share/ReactSymbols";
+import { Context, Thenable, Usable } from "../share/ReactTypes";
 import { TRANSITION_CONFIG } from "../share/transition";
 import { markWipReceiveUpdate } from "./beginwork";
 import { FiberNode } from "./fiber";
@@ -15,6 +16,7 @@ import {
 } from "./fiberLanes";
 import { Flags, PassiveEffect } from "./flags";
 import { HookEffectTag, HookHasEffect, Passive } from "./hookEffectTags";
+import { tractUseThenable } from "./thenable";
 import {
   Action,
   Dispatch,
@@ -89,6 +91,7 @@ export function renderWithHooks(
       useMemo: updateMemo,
       useCallback: updateCallback,
       useContext: readContext,
+      use,
     };
   } else {
     // mount
@@ -101,6 +104,7 @@ export function renderWithHooks(
       useMemo: mountMemo,
       useCallback: mountCallback,
       useContext: readContext,
+      use,
     };
   }
 
@@ -483,6 +487,21 @@ function mountDeferedValue<T>(value: T) {
   return hook.memorizedState;
 }
 
+export function use<T>(usable: Usable<T>) {
+
+  if (usable !== null && typeof usable === "object") {
+    // duck test
+    if (typeof (usable as Thenable<T>).then === "function") {
+      // thenable
+      // 跟踪传入的thenable对象，包装成内部Thenable
+      return tractUseThenable(usable as Thenable<T>);
+    } else if ((usable as Context<T>).$$typeof === REACT_CONTEXT_TYPE) {
+      // context
+      return readContext<T>(usable as Context<T>);
+    }
+  }
+}
+
 // context不会在memorizedState上记录数据
 function readContext<T>(context: Context<T>) {
   const consumer = currentRenderingFiber;
@@ -498,4 +517,11 @@ export function bailoutHook(wip: FiberNode, renderLane: Lane) {
     // 去掉current上的renderLane 因为此次renderLane没生效
     current.lanes = removeLanes(current.lanes, renderLane);
   }
+}
+
+/** 重置hook on unwind 函数执行到一部分 unwind了 需要把 hook现场重置*/
+export function resetHookOnUnwind(){
+  currentRenderingFiber = null
+  workInProgressHook = null
+  currentHook = null
 }

@@ -29,6 +29,7 @@ import {
 import { Effect } from "./fiberHooks";
 import { Lane, Lanes, NoLane, NoLanes } from "./fiberLanes";
 import { ContextItem } from "./fiberContext";
+import { Wakeable } from "../share/ReactTypes";
 
 export type Container = Element;
 export type Instance = Element;
@@ -142,6 +143,9 @@ export class FiberRootNode {
   /** 已经完成运行的更新对应的lane 在render阶段结束之后设置，在commit阶段置空 类似于finishedWork */
   finishedLane: Lane;
 
+  /** pingCache */
+  pingCache: WeakMap<Wakeable, Set<Lane>>;
+
   /** 需要传入container 和 第一个HostRootFiber */
   constructor(conatiner: Container, hostRootFiber: FiberNode) {
     /** 保存container */
@@ -163,6 +167,7 @@ export class FiberRootNode {
     /** 初始化lane */
     this.pendingLanes = NoLanes;
     this.finishedLane = NoLane;
+    this.pingCache = null;
   }
 }
 

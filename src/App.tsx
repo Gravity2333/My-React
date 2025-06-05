@@ -1,4 +1,4 @@
-import React, { Suspense, useState, useTransition } from "../lib/react";
+import React, { Suspense, use, useState, useTransition } from "../lib/react";
 import Counter from "./components/Counter";
 import Input from "./components/Input";
 import MemoComp from "./components/MemoComp";
@@ -47,6 +47,11 @@ const PostsTab = () => {
   );
 };
 
+const p = new Promise((resolve) => {
+  setTimeout(() => {
+    resolve(<div>TEST SUSPENSE</div>);
+  }, 3000);
+});
 const App = () => {
   const [isPending, startTransition] = useTransition();
   const [type, setType] = useState<
@@ -74,9 +79,13 @@ const App = () => {
     <>
       {/* @ts-ignore */}
       <Suspense fallback={"loading..."}>
-        <div>TEST SUSPENSE</div>
+        {React.createElement(() => {
+          const res = use(p);
+
+          return res;
+        })}
       </Suspense>
-      <nav style={navContainerStyle}>
+      {/* <nav style={navContainerStyle}>
         <ul style={menuStyle}>
           {menuItems.map(({ key, label, value }) => (
             <li
@@ -109,7 +118,7 @@ const App = () => {
           content
         )}
       </div>
-      <MemoComp style={memoCompStyle} />
+      <MemoComp style={memoCompStyle} /> */}
     </>
   );
 };

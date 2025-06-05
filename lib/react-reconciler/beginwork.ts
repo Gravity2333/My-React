@@ -24,13 +24,21 @@ import {
 } from "./workTag";
 import { bailoutHook, renderWithHooks } from "./fiberHooks";
 import { includeSomeLanes, Lane, NoLane } from "./fiberLanes";
-import { ChildDeletion, DidCapture, NoFlags, Ref, Update } from "./flags";
+import {
+  ChildDeletion,
+  DidCapture,
+  NoFlags,
+  Placement,
+  Ref,
+  Update,
+} from "./flags";
 import shallowEqual from "../utils/shallowEqual";
 import {
   prepareToReadContext,
   propagateContextChange,
   pushContext,
 } from "./fiberContext";
+import { pushSuspenseFiber } from "./suspenseContext";
 
 /** 是否收到更新 默认为false 即没有更新 开启bailout */
 let didReceiveUpdate: boolean = false;
@@ -353,7 +361,8 @@ function updateSuspenseComponent(wip: FiberNode, renderLane: Lane) {
   // 获得 FallbackChildren
   const nextFallbackChildren = pendingProps.fallback;
 
-  // TODO 维护Suspense Stack
+  // 维护Suspense Stack
+  pushSuspenseFiber(wip);
 
   if (!current) {
     if (showFallback) {
@@ -425,7 +434,7 @@ function mountSuspenseFallbackChildren(
 
   // 由于没有调用 reconcileChild 协调 所以
   // 当一开始挂载offscreen 后因为挂起重新渲染 fallback 此时fallback为新增的Fiber 需要手动标记Update
-  fallbackFragmentFiber.flags |= Update;
+  fallbackFragmentFiber.flags |= Placement;
 
   return fallbackFragmentFiber;
 }
@@ -496,6 +505,8 @@ function updateSuspenseFallbackChildren(
   offscreenFiber.return = wip;
   offscreenFiber.sibling = fallbackFiber;
   fallbackFiber.return = wip;
+  // 当一开始挂载offscreen 后因为挂起重新渲染 fallback 此时fallback为新增的Fiber 需要手动标记Update
+  fallbackFiber.flags |= Placement;
 
   return fallbackFiber;
 }
