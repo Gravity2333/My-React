@@ -94,9 +94,9 @@ export function completeWork(wip: FiberNode) {
         // 新Fiber的Offscreen是否隐藏
         const isHidden =
           (offscreenFiber.pendingProps as OffscreenProps).mode === "hidden";
-        // 当前Fiber的Offscreen是否隐藏
+        // 当前Fiber的Offscreen是否隐藏 注意这里不能用 memorizedsProps 因为如果中断 上一步就没有设置 wip.memorizedProps = wip.pendingProps
         const wasHidden =
-          (currentOffscreenFiber.memorizedProps as OffscreenProps).mode ===
+          (currentOffscreenFiber.pendingProps as OffscreenProps)?.mode ===
           "hidden";
         // mode变化,打标记
         if (isHidden !== wasHidden) {
@@ -112,6 +112,7 @@ export function completeWork(wip: FiberNode) {
       popSuspenseFiber();
       // 冒泡
       bubbleProperties(wip);
+      return 
     default:
       console.warn("未处理的completeWork类型！");
   }

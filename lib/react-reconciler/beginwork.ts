@@ -87,6 +87,8 @@ export function beginWork(wip: FiberNode, renderLane: Lane): FiberNode | null {
         // 这地方一定要加context的判读，即使bailout 也需要pushContext
         if (wip.tag === ContextProvider) {
           pushContext(wip.type._context, wip.pendingProps.value);
+        }else if(wip.tag === SuspenseComponent){
+          pushSuspenseFiber(wip)
         }
         return bailoutOnAlreadyFinishedWork(wip, renderLane);
       }
@@ -131,6 +133,9 @@ export function beginWork(wip: FiberNode, renderLane: Lane): FiberNode | null {
 function checkUpdateOrContext(wip: FiberNode, renderLane: Lane) {
   // 注意 这里不要用wip.lanes直接检查，因为checkUpdate 也会在 wip.lanes = NoLane 之后调用，比如Memo中
   // 此时wip.lanes可能为NoLane 所以需要使用在enqueueUpdate中同步的 current.lanes
+  if(wip.tag === SuspenseComponent){
+    return true
+  }
   const current = wip.alternate;
   if (current !== null && includeSomeLanes(current.lanes, renderLane)) {
     return true;
@@ -344,7 +349,7 @@ function updateOffscreenComponent(wip: FiberNode, renderLane: Lane) {
 function updateSuspenseComponent(wip: FiberNode, renderLane: Lane) {
   const pendingProps = wip.pendingProps;
   const current = wip.alternate;
-
+console.log(wip,wip.flags)
   // 是否展示 fallback
   let showFallback = false;
 
@@ -386,7 +391,7 @@ function updateSuspenseComponent(wip: FiberNode, renderLane: Lane) {
       );
     } else {
       /** 更新时展示 PrimaryChildren */
-      return updateSuspensePrimaryChildren(wip, nextFallbackChildren);
+      return updateSuspensePrimaryChildren(wip, nextPrimaryChildren);
     }
   }
 }
@@ -444,6 +449,7 @@ function updateSuspensePrimaryChildren(
   wip: FiberNode,
   primaryChildren: ReactElementChildren
 ) {
+
   const currentFiber = wip.alternate;
   // 找到当前的OffscreenFiber
   const currentOffscreenFiber = currentFiber.child;

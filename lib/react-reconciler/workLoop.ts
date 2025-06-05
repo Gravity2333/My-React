@@ -423,7 +423,7 @@ function handleThrownAndUnwind(
   // 重置hooks
   resetHookOnUnwind();
   // 注册 抛出异常
-  handleThrownException(root, thrownValue, lane);
+  handleThrownException(root,wip, thrownValue, lane);
   // unwindwork
   const next = unwindWork(wip);
   

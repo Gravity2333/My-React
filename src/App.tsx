@@ -2,6 +2,7 @@ import React, { Suspense, use, useState, useTransition } from "../lib/react";
 import Counter from "./components/Counter";
 import Input from "./components/Input";
 import MemoComp from "./components/MemoComp";
+import SuspenseUse from "./components/SuspenseUse";
 import ContextDemo from "./Pages/ContextDemo";
 import WelcomePage from "./Pages/Welcome";
 
@@ -47,15 +48,11 @@ const PostsTab = () => {
   );
 };
 
-const p = new Promise((resolve) => {
-  setTimeout(() => {
-    resolve(<div>TEST SUSPENSE</div>);
-  }, 3000);
-});
+
 const App = () => {
   const [isPending, startTransition] = useTransition();
   const [type, setType] = useState<
-    "welcome" | "counter" | "input" | "hugeData" | "context"
+    "welcome" | "counter" | "input" | "hugeData" | "context" | "suspense-use"
   >("welcome");
 
   const content = (() => {
@@ -70,6 +67,8 @@ const App = () => {
         return <ContextDemo />;
       case "hugeData":
         return <PostsTab />;
+      case "suspense-use":
+        return <SuspenseUse/>
       default:
         return null;
     }
@@ -77,15 +76,7 @@ const App = () => {
 
   return (
     <>
-      {/* @ts-ignore */}
-      <Suspense fallback={"loading..."}>
-        {React.createElement(() => {
-          const res = use(p);
-
-          return res;
-        })}
-      </Suspense>
-      {/* <nav style={navContainerStyle}>
+      <nav style={navContainerStyle}>
         <ul style={menuStyle}>
           {menuItems.map(({ key, label, value }) => (
             <li
@@ -118,7 +109,7 @@ const App = () => {
           content
         )}
       </div>
-      <MemoComp style={memoCompStyle} /> */}
+      <MemoComp style={memoCompStyle} />
     </>
   );
 };
@@ -133,6 +124,7 @@ const menuItems = [
     value: "hugeData",
   },
   { key: "context-menu", label: "测试Context", value: "context" },
+  { key: "suspense-use", label: "测试use & Suspense", value: "suspense-use" },
 ];
 
 const menuItemStyle = {

@@ -200,7 +200,7 @@ function hideOrUnhideAllChilden(wip: FiberNode, hidden: boolean) {
       // 都不是 Host节点 递归处理
       hideOrUnhideAllChilden(child, hidden);
     }
-    child =child.sibling
+    child = child.sibling;
   }
 }
 
@@ -420,7 +420,9 @@ function insertOrAppendPlacementNodeIntoConatiner(
   // 这里需要注意 finishedWork 可能也不是HostComponet
   if (finishedWork.tag === HostComponent || finishedWork.tag == HostText) {
     if (hostSibling) {
-      hostParent.insertBefore(finishedWork.stateNode, hostSibling);
+      if (hostParent.contains(hostSibling)) {
+        hostParent.insertBefore(finishedWork.stateNode, hostSibling);
+      }
     } else {
       hostParent.append(finishedWork.stateNode);
     }

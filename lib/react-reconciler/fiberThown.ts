@@ -1,14 +1,15 @@
 /** 用来注册唤醒suspense */
 
 import { Wakeable } from "../share/ReactTypes";
-import { FiberRootNode } from "./fiber";
-import { Lane } from "./fiberLanes";
+import { FiberNode, FiberRootNode } from "./fiber";
+import { Lane, mergeLane, requestUpdateLane } from "./fiberLanes";
 import { ShouldCapture } from "./flags";
 import { getNearestSuspenseFiber } from "./suspenseContext";
-import { ensureRootIsScheduled } from "./workLoop";
+import { ensureRootIsScheduled, scheduleUpdateOnFiber } from "./workLoop";
 
 function attachPingListener(
   root: FiberRootNode,
+  wip: FiberNode,
   wakeable: Wakeable,
   lane: Lane
 ) {
@@ -35,7 +36,9 @@ function attachPingListener(
       if (root.pingCache.has(wakeable)) {
         root.pingCache.delete(wakeable);
       }
-      ensureRootIsScheduled(root);
+      const updateLane = requestUpdateLane()
+      wip.lanes = mergeLane(wip.lanes,updateLane)
+      scheduleUpdateOnFiber(wip,updateLane)
     };
 
     wakeable.then(ping, ping);
@@ -44,6 +47,7 @@ function attachPingListener(
 
 export function handleThrownException(
   root: FiberRootNode,
+  wip: FiberNode,
   thrownValue: any,
   lane: Lane
 ) {
@@ -56,7 +60,7 @@ export function handleThrownException(
         nearsetSuspenseFiber.flags |= ShouldCapture
       }
       // 注册listener
-      attachPingListener(root, thrownValue as Wakeable, lane);
+      attachPingListener(root,wip, thrownValue as Wakeable, lane);
     }
   }
 }
