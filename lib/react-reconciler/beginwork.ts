@@ -353,7 +353,6 @@ function updateOffscreenComponent(wip: FiberNode, renderLane: Lane) {
 function updateSuspenseComponent(wip: FiberNode, renderLane: Lane) {
   const pendingProps = wip.pendingProps;
   const current = wip.alternate;
-  console.log(wip, wip.flags);
   // 是否展示 fallback
   let showFallback = false;
 
@@ -526,7 +525,7 @@ function updateLazyComponent(wip: FiberNode, renderLane: Lane) {
   const _lazy = wip.type as LazyComponentType;
   const _payload = _lazy._payload;
   const initIntializer = _lazy._init;
-  const Component = initIntializer(_payload)?.type;
+  const Component = initIntializer(_payload);
   // 修改类型
   wip.tag = FunctionComponent;
   wip.type = Component;

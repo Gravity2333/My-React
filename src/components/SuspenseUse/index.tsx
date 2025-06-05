@@ -9,7 +9,6 @@ const cachePool: any[] = [];
 
 function fetchData(id, timeout) {
   const cache = cachePool[id];
-  console.log(cachePool);
   if (cache) {
     return cache;
   }
@@ -27,7 +26,6 @@ function Cpn({ id, timeout }) {
   }
 
   useEffect(() => {
-    console.log("effect create");
     return () => console.log("effect destroy");
   }, []);
 
@@ -58,12 +56,12 @@ export default function SuspenseWrapper() {
         </Suspense>
       </div>
       {/* // @ts-ignore */}
-      <Suspense fallback={<div>loading...Memo Comp</div>}>
+      {/* <Suspense fallback={<div>loading...Memo Comp</div>}>
         {React.createElement(()=>{
           const res = use(lazyComp)
           return React.createElement(res)
         })}
-      </Suspense>
+      </Suspense> */}
     </>
   );
 }

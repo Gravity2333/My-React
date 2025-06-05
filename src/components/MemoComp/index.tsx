@@ -1,7 +1,6 @@
 import React, { memo } from "../../../lib/react";
 
 const MemoComp= memo(() => {
-  console.log("memo rerender!");
   return (
     <div
       style={{

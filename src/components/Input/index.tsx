@@ -28,7 +28,6 @@ const PostsTab = function PostsTab({ len = 0 }: { len: number }) {
 };
 
 export default function Input() {
-  console.log("input re");
   const [appMessage, setAppMessage] = useState<string>("测试输入框内容同步");
   const deferedAppMessage = useDeferedValue(appMessage);
 

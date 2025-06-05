@@ -440,6 +440,7 @@ function updateMemo<T>(nextCreate, deps) {
   if (areHookInputsEqual(prevDeps, deps)) {
     hook.memorizedState = [prevValue, deps];
   } else {
+  
     hook.memorizedState = [nextCreate(), deps];
   }
   return hook.memorizedState[0];

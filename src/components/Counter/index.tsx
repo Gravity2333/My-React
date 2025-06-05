@@ -6,8 +6,6 @@ export default function Counter() {
   const domRef = useRef<Element>(null);
   const countPlusTen = useMemo(() => count + 10, [count]);
 
-  console.log("re-render");
-
   return (
     <div
       style={{
