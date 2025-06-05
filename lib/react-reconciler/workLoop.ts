@@ -309,7 +309,7 @@ export function renderRoot(
           wipRootRenderLane
         );
       }
-     
+
       // 开启时间片 scheduler调度
       shouldTimeSlice ? workConcurrentLoop() : workLoop();
       break;
@@ -408,8 +408,14 @@ function handleThrow(thrownValue: any) {
     workInProgressSuspenedValue = getSuspendedThenable();
   } else {
     // error boundary
-    workInProgressSuspendedReason = SuspendedOnError;
-    workInProgressSuspenedValue = thrownValue;
+    if (
+      thrownValue !== null &&
+      typeof thrownValue === "object" &&
+      typeof thrownValue.then === "function"
+    ) {
+      workInProgressSuspendedReason = SuspendedOnError;
+      workInProgressSuspenedValue = thrownValue;
+    }
   }
 }
 
@@ -423,10 +429,10 @@ function handleThrownAndUnwind(
   // 重置hooks
   resetHookOnUnwind();
   // 注册 抛出异常
-  handleThrownException(root,wip, thrownValue, lane);
+  handleThrownException(root, wip, thrownValue, lane);
   // unwindwork
   const next = unwindWork(wip);
-  
+
   if (next) {
     workInProgress = next;
   }

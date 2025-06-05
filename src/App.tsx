@@ -2,6 +2,7 @@ import React, { Suspense, use, useState, useTransition } from "../lib/react";
 import Counter from "./components/Counter";
 import Input from "./components/Input";
 import MemoComp from "./components/MemoComp";
+import SuspenseLazy from "./components/SuspenseLazy";
 import SuspenseUse from "./components/SuspenseUse";
 import ContextDemo from "./Pages/ContextDemo";
 import WelcomePage from "./Pages/Welcome";
@@ -48,11 +49,16 @@ const PostsTab = () => {
   );
 };
 
-
 const App = () => {
   const [isPending, startTransition] = useTransition();
   const [type, setType] = useState<
-    "welcome" | "counter" | "input" | "hugeData" | "context" | "suspense-use"
+    | "welcome"
+    | "counter"
+    | "input"
+    | "hugeData"
+    | "context"
+    | "suspense-use"
+    | "suspense-lazy"
   >("welcome");
 
   const content = (() => {
@@ -68,7 +74,9 @@ const App = () => {
       case "hugeData":
         return <PostsTab />;
       case "suspense-use":
-        return <SuspenseUse/>
+        return <SuspenseUse />;
+      case "suspense-lazy":
+        return <SuspenseLazy />;
       default:
         return null;
     }
@@ -125,6 +133,11 @@ const menuItems = [
   },
   { key: "context-menu", label: "测试Context", value: "context" },
   { key: "suspense-use", label: "测试use & Suspense", value: "suspense-use" },
+  {
+    key: "suspense-lazy",
+    label: "测试lazy & Suspense",
+    value: "suspense-lazy",
+  },
 ];
 
 const menuItemStyle = {

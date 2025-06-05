@@ -71,7 +71,7 @@ export type Thenable<Value = any, Result = any, Err = any> =
   | RejectedThenable<Value, Result, Err>;
 
 /** 可以被唤醒的thenable */
-export interface Wakeable extends ThenableImple<any, any, any> {}
+export interface Wakeable<T = any> extends ThenableImple<T, any, any> {}
 
 /** use钩子需要的参数类型 */
 export type Usable<T> = Thenable<T, any, T> | Context<T>;

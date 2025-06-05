@@ -10,6 +10,7 @@ import {
 import {
   REACT_CONSUMER_TYPE,
   REACT_FRAGMENT_TYPE,
+  REACT_LAZY_TYPE,
   REACT_MEMO_TYPE,
   REACT_PROVIDER_TYPE,
   REACT_SUSPENSE_TYPE,
@@ -21,6 +22,7 @@ import {
   Fragment,
   FunctionComponent,
   HostComponent,
+  LazyComponent,
   MemoComponent,
   OffscreenComponent,
   SuspenseComponent,
@@ -251,6 +253,9 @@ export function createFiberFromElement(element: ReactElement): FiberNode {
         break;
       case REACT_CONSUMER_TYPE:
         fiberTag = ContextConsumer;
+        break;
+      case REACT_LAZY_TYPE:
+        fiberTag = LazyComponent;
         break;
     }
   } else if (element.type === REACT_FRAGMENT_TYPE || element.type === void 0) {

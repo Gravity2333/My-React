@@ -18,6 +18,7 @@ import {
   HostComponent,
   HostRoot,
   HostText,
+  LazyComponent,
   MemoComponent,
   OffscreenComponent,
   SuspenseComponent,
@@ -39,6 +40,7 @@ import {
   pushContext,
 } from "./fiberContext";
 import { pushSuspenseFiber } from "./suspenseContext";
+import { LazyComponentType } from "../react/lazy";
 
 /** 是否收到更新 默认为false 即没有更新 开启bailout */
 let didReceiveUpdate: boolean = false;
@@ -87,8 +89,8 @@ export function beginWork(wip: FiberNode, renderLane: Lane): FiberNode | null {
         // 这地方一定要加context的判读，即使bailout 也需要pushContext
         if (wip.tag === ContextProvider) {
           pushContext(wip.type._context, wip.pendingProps.value);
-        }else if(wip.tag === SuspenseComponent){
-          pushSuspenseFiber(wip)
+        } else if (wip.tag === SuspenseComponent) {
+          pushSuspenseFiber(wip);
         }
         return bailoutOnAlreadyFinishedWork(wip, renderLane);
       }
@@ -122,6 +124,8 @@ export function beginWork(wip: FiberNode, renderLane: Lane): FiberNode | null {
       return updateOffscreenComponent(wip, renderLane);
     case SuspenseComponent:
       return updateSuspenseComponent(wip, renderLane);
+    case LazyComponent:
+      return updateLazyComponent(wip, renderLane);
     default:
       console.warn("beginWork未实现的类型", wip.tag);
       break;
@@ -133,8 +137,8 @@ export function beginWork(wip: FiberNode, renderLane: Lane): FiberNode | null {
 function checkUpdateOrContext(wip: FiberNode, renderLane: Lane) {
   // 注意 这里不要用wip.lanes直接检查，因为checkUpdate 也会在 wip.lanes = NoLane 之后调用，比如Memo中
   // 此时wip.lanes可能为NoLane 所以需要使用在enqueueUpdate中同步的 current.lanes
-  if(wip.tag === SuspenseComponent){
-    return true
+  if (wip.tag === SuspenseComponent) {
+    return true;
   }
   const current = wip.alternate;
   if (current !== null && includeSomeLanes(current.lanes, renderLane)) {
@@ -349,7 +353,7 @@ function updateOffscreenComponent(wip: FiberNode, renderLane: Lane) {
 function updateSuspenseComponent(wip: FiberNode, renderLane: Lane) {
   const pendingProps = wip.pendingProps;
   const current = wip.alternate;
-console.log(wip,wip.flags)
+  console.log(wip, wip.flags);
   // 是否展示 fallback
   let showFallback = false;
 
@@ -449,7 +453,6 @@ function updateSuspensePrimaryChildren(
   wip: FiberNode,
   primaryChildren: ReactElementChildren
 ) {
-
   const currentFiber = wip.alternate;
   // 找到当前的OffscreenFiber
   const currentOffscreenFiber = currentFiber.child;
@@ -515,4 +518,17 @@ function updateSuspenseFallbackChildren(
   fallbackFiber.flags |= Placement;
 
   return fallbackFiber;
+}
+
+/** 更新懒加载组件 */
+function updateLazyComponent(wip: FiberNode, renderLane: Lane) {
+
+  const _lazy = wip.type as LazyComponentType;
+  const _payload = _lazy._payload;
+  const initIntializer = _lazy._init;
+  const Component = initIntializer(_payload)?.type;
+  // 修改类型
+  wip.tag = FunctionComponent;
+  wip.type = Component;
+  return updateFunctionComponent(wip, Component, renderLane);
 }
