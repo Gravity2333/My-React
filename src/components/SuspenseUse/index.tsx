@@ -9,7 +9,7 @@ const cachePool: any[] = [];
 
 function fetchData(id, timeout) {
   const cache = cachePool[id];
-  console.log(cachePool)
+  console.log(cachePool);
   if (cache) {
     return cache;
   }
@@ -44,11 +44,24 @@ function Cpn({ id, timeout }) {
   );
 }
 
+const lazyComp = delay(10000).then(()=>import('../MemoComp').then(res=>res.default)) 
+
 export default function SuspenseWrapper() {
   return (
-    // @ts-ignore
-    <Suspense fallback={<div>loading...</div>}>
-      <Cpn id={0} timeout={1000} />
-    </Suspense>
+    <>
+      {/* // @ts-ignore */}
+      <div>
+      {/* <Suspense fallback={<div>loading...</div>}>
+        <Cpn id={0} timeout={1000} />
+      </Suspense> */}
+      </div>
+      {/* // @ts-ignore */}
+      <Suspense fallback={<div>loading...Memo Comp</div>}>
+        {React.createElement(()=>{
+          const res = use(lazyComp)
+          return React.createElement(res)
+        })}
+      </Suspense>
+    </>
   );
 }
