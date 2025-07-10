@@ -175,9 +175,9 @@ export function performConcurrentWorkOnRoot(
     // 没有任务需要处理了 这里也不需要调度了 用来完成批处理
     return;
   }
-
+  const needSync = lane === SyncLane || didTimeout;
   // 开始生成fiber 关闭并发模式 ,在没有超时的情况下，可以开启并发中断
-  const exitStatus = renderRoot(root, lane, !didTimeout);
+  const exitStatus = renderRoot(root, lane, !needSync);
   switch (exitStatus) {
     case RootInComplete:
       // 中断的情况 需要返回subTask 重新注册任务
