@@ -1,6 +1,5 @@
 /** 处理context相关 */
-
-import { Context } from "../react/context";
+import { Context } from "../share/ReactTypes";
 import { markWipReceiveUpdate } from "./beginwork";
 import { FiberNode } from "./fiber";
 import { isSubsetOfLanes, Lane, mergeLane, NoLanes } from "./fiberLanes";
