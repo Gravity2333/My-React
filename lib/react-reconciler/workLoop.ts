@@ -246,7 +246,7 @@ function prepareRefreshStack(root: FiberRootNode, lane: Lane) {
   /** 这里在首次进入的时候 会创建一个新的hostRootFiber
    * 在react中存在两棵fiber树，两个hostRootFiber根节点 用alternate链接，成为双缓存
    */
-
+  console.log("prepareRefreshStackprepareRefreshStackprepareRefreshStack",lane)
   workInProgress = createWorkInProgress(root.current, {});
 
   /** 重置错误 */
@@ -320,13 +320,11 @@ export function renderRoot(
   shouldTimeSlice: boolean
 ) {
   let workLoopRetryTimes = 0;
-
   if (wipRootRenderLane !== lane) {
     // 避免重新进行初始化
     /** 先进行准备初始化 */
     prepareRefreshStack(root, lane);
   }
-
   while (true) {
     try {
       // 处理错误

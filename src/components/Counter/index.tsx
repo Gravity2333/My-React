@@ -46,7 +46,9 @@ export default function Counter() {
             textTransform: "uppercase",
           }}
           ref={domRef}
-          onClick={() => setCount(count + 1)}
+          onClick={() => {
+            setCount(count + 1)
+          }}
         >
           +1
         </button>

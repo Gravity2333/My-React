@@ -1,6 +1,11 @@
 import { Container } from "../react-reconciler/fiber";
 import { ReactElementProps } from "../react";
-import { eventTypeToSchedulerPriority, nativeEvents, reactEvents, reactEventSet } from "./events";
+import {
+  eventTypeToSchedulerPriority,
+  nativeEvents,
+  reactEvents,
+  reactEventSet,
+} from "./events";
 import scheduler, { PriorityLevel } from "../scheduler";
 
 /** 转换Style */
@@ -18,8 +23,7 @@ const stopPropagationKey = "__stopPropagation";
 const isEvent = (key) => reactEventSet.has(key);
 
 /** 判断是否为属性（排除过滤掉event和children） */
-const isAttribute = (key) => key !== "children" 
-// && !isEvent(key);
+const isAttribute = (key) => key !== "children" && !isEvent(key);
 
 /**
  * 在DOM上挂上Fiber代理的属性 方便合成事件这些操作
@@ -146,9 +150,9 @@ function triggerEventListeners(
 ) {
   listeners.forEach((listener) =>
     scheduler.runWithPriority(eventTypeToSchedulerPriority(event.type), () => {
-      listener(event)
+      listener(event);
     })
-  )
+  );
 }
 
 /**
@@ -163,6 +167,13 @@ function dispatchSyntheticEvent(
   event: Event
 ) {
   const collectedEvents = collectEvents(container, eventType, event);
+
+  if (
+    collectedEvents.bubbleCallbacks?.length === 0 &&
+    collectedEvents.captureCallbacks?.length == 0
+  ) {
+    return;
+  }
 
   // 代理阻止冒泡事件
   event[stopPropagationKey] = false;
