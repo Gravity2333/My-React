@@ -1,11 +1,11 @@
-import React, { useDeferedValue, useMemo, useState } from "../../../lib/react";
+import React, { memo, useDeferedValue, useMemo, useState } from "../../../lib/react";
 
 const bigList = Array.from({ length: 10000 }, (_, i) => ({
   id: i,
   name: `item ${i + 1}`,
 }));
 
-const BigListItem = ({ id, name }) => {
+const BigListItem = memo(({ id, name }) => {
   const itemStyle = {
     padding: "8px 12px",
     borderBottom: "1px solid #eaeaea",
@@ -36,7 +36,7 @@ const BigListItem = ({ id, name }) => {
       <span style={nameStyle}>{name}</span>
     </li>
   );
-};
+})
 
 export default function DeferedValueDemo() {
   const [searchValue, setsearchValue] = useState<string>("");
