@@ -60,11 +60,17 @@ const NotSuspended = 0;
 const SuspendedOnError = 1;
 /** 因为请求数据被挂起 */
 const SuspendedOnData = 2;
+/** 因为旧的 Promise抛出方式引起的刮起  旧的 对比之下就是 使用 use hooks的方式 官方推荐的新的挂起方式
+ *  注意，React.lazy走的也是 SuspendedOnDeprecatedThrowPromise
+ *  你可以用 use钩子 代替 lazy
+ */
+const SuspendedOnDeprecatedThrowPromise = 4;
 
 type SuspenedReason =
   | typeof NotSuspended
   | typeof SuspendedOnError
-  | typeof SuspendedOnData;
+  | typeof SuspendedOnData
+  | typeof SuspendedOnDeprecatedThrowPromise;
 
 /** wip被suspense的原因 */
 let workInProgressSuspendedReason: SuspenedReason = NotSuspended;
@@ -406,12 +412,16 @@ function handleThrow(thrownValue: any) {
     workInProgressSuspendedReason = SuspendedOnData;
     workInProgressSuspenedValue = getSuspendedThenable();
   } else {
-    // error boundary
+    // SuspendedOnDeprecatedThrowPromise 旧的挂起方式
     if (
       thrownValue !== null &&
       typeof thrownValue === "object" &&
       typeof thrownValue.then === "function"
     ) {
+      workInProgressSuspendedReason = SuspendedOnDeprecatedThrowPromise;
+      workInProgressSuspenedValue = thrownValue;
+    } else {
+      /** 由于错误挂起  ERR boundary方式 */
       workInProgressSuspendedReason = SuspendedOnError;
       workInProgressSuspenedValue = thrownValue;
     }
