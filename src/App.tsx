@@ -1,5 +1,6 @@
 import React, { useState, useTransition } from "../lib/react";
 import Counter from "./components/Counter";
+import DeferedValueDemo from "./components/DeferedValueDemo";
 import Input from "./components/Input";
 import MemoComp from "./components/MemoComp";
 import SuspenseLazy from "./components/SuspenseLazy";
@@ -11,8 +12,8 @@ const styles = {
   appContainer: {
     fontFamily: "Arial, sans-serif",
     padding: "20px",
-    width: '100%',
-    height:'100%',
+    width: "100%",
+    height: "100%",
     margin: "0 auto",
   },
   navbar: {
@@ -119,6 +120,7 @@ const App = () => {
     | "welcome"
     | "counter"
     | "input"
+    | "useDeferedValue-menu"
     | "hugeData"
     | "context"
     | "suspense-use"
@@ -127,14 +129,24 @@ const App = () => {
 
   const content = (() => {
     switch (type) {
-      case "welcome": return <WelcomePage />;
-      case "counter": return <Counter />;
-      case "input": return <Input />;
-      case "context": return <ContextDemo />;
-      case "hugeData": return <PostsTab />;
-      case "suspense-use": return <SuspenseUse />;
-      case "suspense-lazy": return <SuspenseLazy />;
-      default: return null;
+      case "welcome":
+        return <WelcomePage />;
+      case "counter":
+        return <Counter />;
+      case "input":
+        return <Input />;
+      case "context":
+        return <ContextDemo />;
+      case "useDeferedValue-menu":
+        return <DeferedValueDemo />;
+      case "hugeData":
+        return <PostsTab />;
+      case "suspense-use":
+        return <SuspenseUse />;
+      case "suspense-lazy":
+        return <SuspenseLazy />;
+      default:
+        return null;
     }
   })();
 
@@ -165,10 +177,23 @@ const menuItems = [
   { key: "welcome-menu", label: "Welcome", value: "welcome" },
   { key: "counter-menu", label: "计数器", value: "counter" },
   { key: "input-menu", label: "输入框", value: "input" },
-  { key: "hugedata-menu", label: "大量数据 测试useTransition", value: "hugeData" },
+  {
+    key: "hugedata-menu",
+    label: "大量数据 测试useTransition",
+    value: "hugeData",
+  },
+  {
+    key: "useDeferedValue-menu",
+    label: "展示 useDeferedValue",
+    value: "useDeferedValue-menu",
+  },
   { key: "context-menu", label: "测试Context", value: "context" },
   { key: "suspense-use", label: "测试use & Suspense", value: "suspense-use" },
-  { key: "suspense-lazy", label: "测试lazy & Suspense", value: "suspense-lazy" },
+  {
+    key: "suspense-lazy",
+    label: "测试lazy & Suspense",
+    value: "suspense-lazy",
+  },
 ];
 
 export default App;
