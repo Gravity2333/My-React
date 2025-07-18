@@ -47,7 +47,7 @@ const RootInComplete = 1;
 const RootCompleted = 2;
 // 未完成状态，不用进入commit阶段
 const RootDidNotComplete = 3;
-
+let workInProgressRootExitStatus = RootInProgress;
 /** 全局变量，表示当前正在处理的Fiber */
 let workInProgress: FiberNode = null;
 /** 表示当前正在render阶段对应的任务对应的lane 用来在任务中断后重启判断跳过初始化流程 */
@@ -164,6 +164,21 @@ export function performSyncWorkOnRoot(root: FiberRootNode) {
       // 设置wipRootRenderLane = NoLane;
       wipRootRenderLane = NoLane;
       commitRoot(root);
+      break;
+    case RootDidNotComplete:
+      const _thrownValue = workInProgressSuspenedValue;
+      workInProgressSuspenedValue = null;
+      if (
+        _thrownValue !== null &&
+        typeof _thrownValue === "object" &&
+        typeof _thrownValue.then === "function"
+      ) {
+        throw new Error("你或许需要一个Suspense来包裹Use或Lazy");
+      } else {
+        /** 由于错误挂起  ERR boundary方式 */
+        throw _thrownValue;
+      }
+      break;
     default:
     // TODO Suspense的情况
   }
@@ -196,6 +211,22 @@ export function performConcurrentWorkOnRoot(
       // 设置wipRootRenderLane = NoLane;
       wipRootRenderLane = NoLane;
       commitRoot(root);
+      break;
+    case RootDidNotComplete:
+      const _thrownValue = workInProgressSuspenedValue;
+      workInProgressSuspenedValue = null;
+      if (
+        _thrownValue !== null &&
+        typeof _thrownValue === "object" &&
+        typeof _thrownValue.then === "function"
+      ) {
+        throw new Error("你或许需要一个Suspense来包裹Use或Lazy");
+      } else {
+        /** 由于错误挂起  ERR boundary方式 */
+        throw _thrownValue;
+      }
+      break;
+    default:
   }
 }
 
@@ -221,6 +252,7 @@ function prepareRefreshStack(root: FiberRootNode, lane: Lane) {
   /** 重置错误 */
   workInProgressSuspendedReason = NotSuspended;
   workInProgressSuspenedValue = null;
+  workInProgressRootExitStatus = RootInProgress;
 }
 
 function completeUnitOfWork(fiber: FiberNode) {
@@ -304,7 +336,6 @@ export function renderRoot(
       ) {
         workInProgressSuspendedReason = NotSuspended;
         const thrownValue = workInProgressSuspenedValue;
-        workInProgressSuspenedValue = null;
 
         // 处理 被抛出的一场 和 unwind
         handleThrownAndUnwind(
@@ -313,6 +344,10 @@ export function renderRoot(
           thrownValue,
           wipRootRenderLane
         );
+      }
+
+      if (workInProgressRootExitStatus === RootDidNotComplete) {
+        return RootDidNotComplete;
       }
 
       // 开启时间片 scheduler调度
@@ -443,5 +478,10 @@ function handleThrownAndUnwind(
   const next = unwindWork(wip);
   if (next) {
     workInProgress = next;
+  } else {
+    // 没有命中边界
+    workInProgress = null;
+    // render没有完成
+    workInProgressRootExitStatus = RootDidNotComplete;
   }
 }

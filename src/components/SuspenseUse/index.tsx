@@ -19,6 +19,7 @@ function fetchData(id, timeout) {
 
 function Cpn({ id, timeout }) {
   const [num, updateNum] = useState(0);
+
   const { data } = use<any>(fetchData(id, timeout));
 
   if (num !== 0 && num % 5 === 0) {
