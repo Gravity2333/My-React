@@ -38,6 +38,7 @@ import {
   prepareToReadContext,
   propagateContextChange,
   pushContext,
+  readContextImpl,
 } from "./fiberContext";
 import { pushSuspenseFiber } from "./suspenseContext";
 import { LazyComponentType } from "../react/lazy";
@@ -334,7 +335,7 @@ function updateContextConsumer(wip: FiberNode, renderLane: Lane) {
   const consumerFn = pendingProps.children;
 
   if (typeof consumerFn === "function") {
-    const children = consumerFn(context?._currentValue);
+    const children = consumerFn(readContextImpl(wip,context));
     reconcileChildren(wip, children);
     return wip.child;
   }
