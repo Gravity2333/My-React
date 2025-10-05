@@ -121,7 +121,7 @@ function childReconciler(shouldTrackEffect: boolean) {
           const oldIndex = alternate.index;
           if (oldIndex < lastPlacedIndex) {
             newChildFiber.flags |= Placement;
-            lastPlacedIndex = oldIndex;
+            // lastPlacedIndex = oldIndex; 放置的时候 不移动lastPlacedIndex
           } else {
             // 不设置副作用 移动lastNewFiber
             lastPlacedIndex = oldIndex;
@@ -217,7 +217,7 @@ function childReconciler(shouldTrackEffect: boolean) {
     textNodeFiber.return = wip;
     if (shouldTrackEffect) {
       /** 设置副作用 */
-      textNodeFiber.flags != Placement;
+      textNodeFiber.flags |= Placement;
     }
     return textNodeFiber;
   }
