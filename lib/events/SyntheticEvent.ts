@@ -100,6 +100,12 @@ export function getFiberAttribute(node: Element) {
 
 type SyntheticEventListener = (e: Event) => void;
 
+/** 补充一下W3C 事件模型
+ * 阶段	名称	描述
+1️⃣	捕获阶段（capturing phase）	事件从 window → document → body → ... → 目标元素 一路向下传递，直到到达目标元素。此时可以在捕获阶段监听事件。
+2️⃣	目标阶段（target phase）	事件到达目标元素本身，这时既可以触发捕获监听，也可以触发冒泡监听。
+3️⃣	冒泡阶段（bubbling phase）	事件从目标元素开始，沿着 父级 → body → document → window 一路向上传递。
+ */
 type CollectedEvents = {
   captureCallbacks: SyntheticEventListener[];
   bubbleCallbacks: SyntheticEventListener[];
@@ -107,9 +113,9 @@ type CollectedEvents = {
 
 /**
  * 从target到source 收集冒泡/捕获事件
- * @param source
- * @param eventType
- * @param event
+ * @param source 一般为代理节点 container
+ * @param eventType 事件类型 比如 click hover ...
+ * @param event 事件对象本身
  * @returns
  */
 function collectEvents(
@@ -122,19 +128,23 @@ function collectEvents(
     captureCallbacks: [],
     bubbleCallbacks: [],
   };
-
+  // 收集顺序 从 target -> source 初始化收集节点为 target （事件触发节点）
   let currentNode = event.target as Element;
+  // 根据事件类型，获取react合成事件代理的回调函数名 比如 click => [onClickCapture,onClick]
   const reactEvent = reactEvents[eventType];
+  // 没有匹配到 合成事件无法处理！
   if (!reactEvent) return events;
   while (currentNode !== source) {
     // 从target收集到source
+    // 当前收集节点的 所有属性 props
     const nodeProps = getFiberProps(currentNode);
+    // 收集事件处理函数
     if (nodeProps[reactEvent[1]]) {
       // 冒泡事件
       events.bubbleCallbacks.push(nodeProps[reactEvent[1]]);
     }
     if (nodeProps[reactEvent[0]]) {
-      // 捕获事件
+      // 捕获事件， 注意捕获顺序是反向收集的
       events.captureCallbacks.unshift(nodeProps[reactEvent[0]]);
     }
     currentNode = currentNode.parentNode as Element;
@@ -148,11 +158,17 @@ function triggerEventListeners(
   listeners: SyntheticEventListener[],
   event: Event
 ) {
-  listeners.forEach((listener) =>
+  for (let i = 0; i < listeners.length; i++) {
+    const listener = listeners[i];
     scheduler.runWithPriority(eventTypeToSchedulerPriority(event.type), () => {
       listener(event);
-    })
-  );
+    });
+
+    // 结束传播
+    if (!event[stopPropagationKey]) {
+      break;
+    }
+  }
 }
 
 /**
@@ -166,8 +182,10 @@ function dispatchSyntheticEvent(
   eventType: string,
   event: Event
 ) {
+  // 收集事件路径上的代理事件
   const collectedEvents = collectEvents(container, eventType, event);
 
+  // 没有任何代理事件，提前结束
   if (
     collectedEvents.bubbleCallbacks?.length === 0 &&
     collectedEvents.captureCallbacks?.length == 0
@@ -178,8 +196,10 @@ function dispatchSyntheticEvent(
   // 代理阻止冒泡事件
   event[stopPropagationKey] = false;
 
+  // 原始的 stopPropagation 函数
   const originStopPropagation = event.stopPropagation;
 
+  // 使用Monkey Patch打补丁 包装一层 stopPropagation函数
   event.stopPropagation = () => {
     event[stopPropagationKey] = true;
     originStopPropagation();
