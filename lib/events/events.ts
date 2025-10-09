@@ -12,15 +12,6 @@ export function eventTypeToSchedulerPriority(eventType: string) {
     case "focusin":
     case "focusout":
       return PriorityLevel.IMMEDIATE_PRIORITY;
-    case "scroll":
-    case "resize":
-    case "mousemove":
-    case "mouseenter":
-    case "mouseleave":
-    case "touchstart":
-    case "touchmove":
-    case "touchend":
-      return PriorityLevel.USER_BLOCKING_PRIORITY;
 
     case "input":
     case "change":
@@ -36,8 +27,16 @@ export function eventTypeToSchedulerPriority(eventType: string) {
     case "ended":
     case "canplay":
     case "canplaythrough":
+      return PriorityLevel.USER_BLOCKING_PRIORITY;
+    case "scroll":
+    case "resize":
+    case "mousemove":
+    case "mouseenter":
+    case "mouseleave":
+    case "touchstart":
+    case "touchmove":
+    case "touchend":
       return PriorityLevel.NORMAL_PRIORITY;
-
     case "abort":
     case "load":
     case "loadeddata":
