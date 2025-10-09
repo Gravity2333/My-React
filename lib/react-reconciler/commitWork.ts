@@ -66,20 +66,21 @@ const commitMutationEffectsOnFiber: CommitCallback = (finishedWork, root) => {
   // 获取节点的flags
   const flags = finishedWork.flags;
 
+  // 处理节点放置 Placement
   if ((flags & Placement) !== NoFlags) {
-    // 存在Placement
-    // 处理placement
     commitPlacement(finishedWork);
     // 去掉副作用flag
     // 去掉某个flag: 0b0111&(~0b0100) => 0b0111&0b1011=> 0b0011 去掉了 0b0100
     finishedWork.flags &= ~Placement;
   }
 
+  /** 处理节点更新 Update */
   if ((flags & Update) !== NoFlags) {
     commitUpdate(finishedWork);
     finishedWork.flags &= ~Update;
   }
 
+  /** 处理节点删除 */
   if ((flags & ChildDeletion) !== NoFlags) {
     const deletion = finishedWork.delections;
     deletion.forEach((deleteOldFiber) => {
@@ -88,6 +89,7 @@ const commitMutationEffectsOnFiber: CommitCallback = (finishedWork, root) => {
     finishedWork.flags &= ~ChildDeletion;
   }
 
+  /** 处理被动副作用 */
   if ((flags & PassiveEffect) !== NoFlags) {
     // 存在被动副作用
     commitPassiveEffect(finishedWork, root, "update");
@@ -95,7 +97,7 @@ const commitMutationEffectsOnFiber: CommitCallback = (finishedWork, root) => {
     finishedWork.lanes = removeLanes(finishedWork.lanes, PassiveEffect);
   }
 
-  // 卸载Ref 只有hostComponent需要卸载
+  // 卸载Ref 只有hostComponent需要卸载,Layout阶段再挂在Ref
   if (finishedWork.tag === HostComponent && (flags & Ref) !== NoFlags) {
     const current = finishedWork.alternate;
     if (current) {
@@ -125,9 +127,13 @@ const commitLayoutEffectsOnFiber: CommitCallback = (finishedWork) => {
   // 获取节点的flags
   const flags = finishedWork.flags;
 
+  /** 为什么Ref挂在放在Layout阶段？
+   * Mutation 阶段 DOM还不稳定！
+   * 这其实体现了 React 的一个核心哲学：“Mutation 只做破坏性操作，Layout 才允许安全地观测。”
+   */
   if (finishedWork.tag === HostComponent && (flags & Ref) !== NoFlags) {
     saftyAttachRef(finishedWork);
-    finishedWork.flags &= ~Ref;
+    finishedWork.flags &= ~Ref; // 此时 才去掉Ref的Flag标记
   }
 };
 
