@@ -35,33 +35,38 @@ export function updateFiberProps(node: Element, props: ReactElementProps) {
   node[elementPropsKey] = props;
 }
 
-/** 转换属性 */
+/** 转换属性 React Element 属性  -> DOM 属性 */
 function covertAttribute(attributes: Record<string, any>) {
-  return Object.keys(attributes)
-    .filter(isAttribute)
-    .reduce((prev, key) => {
-      if ("style" === key) {
-        if (
-          typeof attributes["style"] === "object" &&
-          attributes["style"] !== null
-        ) {
-          return {
-            ...prev,
-            style: Object.entries(attributes[key]).reduce(
-              (prevStyle, [key, value]) =>
-                prevStyle + `${camelToKebab(key)}:${value};`,
-              ""
-            ),
-          };
+  return (
+    Object.keys(attributes)
+      /** 过滤掉所有 非属性 即 事件 children等 */
+      .filter(isAttribute)
+      .reduce((prev, key) => {
+        /** 单独处理 style 把对象转换成 字符串 */
+        if ("style" === key) {
+          if (
+            typeof attributes["style"] === "object" &&
+            attributes["style"] !== null
+          ) {
+            return {
+              ...prev,
+              style: Object.entries(attributes[key]).reduce(
+                (prevStyle, [key, value]) =>
+                  prevStyle + `${camelToKebab(key)}:${value};`,
+                ""
+              ),
+            };
+          }
+          return prev;
         }
-        return prev;
-      }
 
-      return {
-        ...prev,
-        [key.toLowerCase()]: attributes[key],
-      };
-    }, {});
+        return {
+          ...prev,
+          /** 属性都是小写 */
+          [key.toLowerCase()]: attributes[key],
+        };
+      }, {})
+  );
 }
 
 /** 更新属性 */
@@ -69,6 +74,7 @@ function updateAttributes(node: Element, props: ReactElementProps) {
   const prevAttribute = getFiberAttribute(node);
   const currentAttirbute = covertAttribute(props);
   Object.entries(currentAttirbute).forEach(([key, value]) => {
+    /** 新增的属性更新 */
     node[key] = value;
     if (prevAttribute[key]) {
       delete prevAttribute[key];
@@ -76,6 +82,7 @@ function updateAttributes(node: Element, props: ReactElementProps) {
   });
 
   Object.keys(prevAttribute).forEach((key) => {
+    /** 去掉的属性删除 */
     delete prevAttribute[key];
     delete node[key];
   });
@@ -160,6 +167,7 @@ function triggerEventListeners(
 ) {
   for (let i = 0; i < listeners.length; i++) {
     const listener = listeners[i];
+    // 获得时间对应的优先级，并且交给scheduler调度
     scheduler.runWithPriority(eventTypeToSchedulerPriority(event.type), () => {
       listener(event);
     });
