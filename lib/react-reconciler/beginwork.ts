@@ -335,7 +335,8 @@ function updateContextConsumer(wip: FiberNode, renderLane: Lane) {
   const consumerFn = pendingProps.children;
 
   if (typeof consumerFn === "function") {
-    const children = consumerFn(readContextImpl(wip,context));
+    prepareToReadContext(wip, renderLane);
+    const children = consumerFn(readContextImpl(wip, context));
     reconcileChildren(wip, children);
     return wip.child;
   }
@@ -522,7 +523,6 @@ function updateSuspenseFallbackChildren(
 
 /** 更新懒加载组件 */
 function updateLazyComponent(wip: FiberNode, renderLane: Lane) {
-
   const _lazy = wip.type as LazyComponentType;
   const _payload = _lazy._payload;
   const initIntializer = _lazy._init;

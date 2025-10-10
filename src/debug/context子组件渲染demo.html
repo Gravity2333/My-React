@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>React Context Render Test</title>
+    <!-- React 18 CDN -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, createContext, useContext, memo } = React;
+
+        const TestContext = createContext(1);
+
+        const B = memo(function B() {
+            const res = useContext(TestContext);
+            console.log("rerender B ");
+            return <></>;
+        });
+
+        function A() {
+            const [id, setId] = useState(0);
+            console.log("rerender A ");
+            return (
+                <TestContext.Provider value={1}>
+                    <button onClick={() => setId((p) => p + 1)}>click to rerender</button>
+                    <B />
+                </TestContext.Provider>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById("root"));
+        root.render(<A />);
+    </script>
+</body>
+
+</html>

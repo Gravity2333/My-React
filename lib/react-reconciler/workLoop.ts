@@ -246,7 +246,6 @@ function prepareRefreshStack(root: FiberRootNode, lane: Lane) {
   /** 这里在首次进入的时候 会创建一个新的hostRootFiber
    * 在react中存在两棵fiber树，两个hostRootFiber根节点 用alternate链接，成为双缓存
    */
-  console.log("prepareRefreshStackprepareRefreshStackprepareRefreshStack",lane)
   workInProgress = createWorkInProgress(root.current, {});
 
   /** 重置错误 */
