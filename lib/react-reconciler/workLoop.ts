@@ -19,6 +19,7 @@ import {
   Lane,
   lanesToSchedulerPriority,
   markRootFinished,
+  markRootSuspended,
   markRootUpdated,
   mergeLane,
   NoLane,
@@ -45,8 +46,9 @@ const RootInProgress = 0;
 const RootInComplete = 1;
 // 完成状态
 const RootCompleted = 2;
-// 未完成状态，不用进入commit阶段
+// 未完成状态，不用进入commit阶段 可能是抛出错误 可能是挂起 suspense
 const RootDidNotComplete = 3;
+/** wip workloop结束的原因  */
 let workInProgressRootExitStatus = RootInProgress;
 /** 全局变量，表示当前正在处理的Fiber */
 let workInProgress: FiberNode = null;
@@ -66,6 +68,7 @@ const SuspendedOnData = 2;
  */
 const SuspendedOnDeprecatedThrowPromise = 4;
 
+/** 挂起原因 */
 type SuspenedReason =
   | typeof NotSuspended
   | typeof SuspendedOnError
@@ -74,7 +77,7 @@ type SuspenedReason =
 
 /** wip被suspense的原因 */
 let workInProgressSuspendedReason: SuspenedReason = NotSuspended;
-
+/** 刮起时 获取的真正的抛出的值 */
 let workInProgressSuspenedValue: any = null;
 /**
  * 从当前fiberNode找到root节点 并且更新沿途fiber的childLanes
@@ -166,6 +169,8 @@ export function performSyncWorkOnRoot(root: FiberRootNode) {
       commitRoot(root);
       break;
     case RootDidNotComplete:
+      /** 挂起lane */
+      markRootSuspended(root, wipRootRenderLane);
       const _thrownValue = workInProgressSuspenedValue;
       workInProgressSuspenedValue = null;
       if (
@@ -213,6 +218,8 @@ export function performConcurrentWorkOnRoot(
       commitRoot(root);
       break;
     case RootDidNotComplete:
+      /** 挂起lane */
+      markRootSuspended(root, wipRootRenderLane);
       const _thrownValue = workInProgressSuspenedValue;
       workInProgressSuspenedValue = null;
       if (
@@ -334,7 +341,7 @@ export function renderRoot(
         workInProgressSuspendedReason = NotSuspended;
         const thrownValue = workInProgressSuspenedValue;
 
-        // 处理 被抛出的一场 和 unwind
+        // 处理 被抛出的异常 并且 开启 unwind 流程 到最近的 Suspense
         handleThrownAndUnwind(
           root,
           workInProgress,

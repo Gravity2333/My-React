@@ -443,7 +443,7 @@ function mountSuspenseFallbackChildren(
   fallbackFragmentFiber.return = wip;
 
   // 由于没有调用 reconcileChild 协调 所以
-  // 当一开始挂载offscreen 后因为挂起重新渲染 fallback 此时fallback为新增的Fiber 需要手动标记Update
+  // 当一开始挂载offscreen 后因为挂起重新渲染 fallback 此时fallback为新增的Fiber 需要手动标记Placement
   fallbackFragmentFiber.flags |= Placement;
 
   return fallbackFragmentFiber;

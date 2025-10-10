@@ -4,6 +4,10 @@ import {
   Thenable,
 } from "../share/ReactTypes";
 
+/**
+ * 用来包装 thenable对象，把满足Promise协议的对象，包装成Thenable类型的内部对象
+ */
+
 // 注意，抛出错误的时候 需要使用内部定义的错误，避免和用户定义错误混淆，取得错误内容通过导出的变量获取
 export const SuspenseException = new Error(
   "Suspense内部Error，请将本错误向外抛出以保证Suspense正常工作！"

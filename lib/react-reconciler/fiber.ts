@@ -141,7 +141,12 @@ export class FiberRootNode {
 
   /** 和lane相关的属性 */
   /** 当前还未运行的任务的lane合集 */
+  /** 顺序 pendingLanes -> SuspendedLanes -> PingedLanes */
   pendingLanes: Lanes;
+  /** 挂起的渲染任务lanes合集 */
+  suspendedLanes: Lanes;
+  /** 已经决策后的lanes */
+  pingedLanes: Lanes;
   /** 已经完成运行的更新对应的lane 在render阶段结束之后设置，在commit阶段置空 类似于finishedWork */
   finishedLane: Lane;
 

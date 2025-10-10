@@ -122,12 +122,25 @@ export function includeSomeLanes(laneSet: Lanes, subSet: Lanes | Lanes) {
 /** 和root操作相关 */
 /**
  * 获取当前root优先级最高的lan
+ * 已经挂起的lane优先级比没挂起的低 即便已经 pinged
  * @param lanes
  */
 export function getNextLane(root: FiberRootNode): Lane {
   const pendingLanes = root.pendingLanes;
-  /** 调用getHighestPriorityLane 获取最高优先级lane */
-  return getHighestPriorityLane(pendingLanes);
+  const suspendedLanes = root.suspendedLanes;
+  /** 先去掉suspenedLanes 要确保没被挂起的lane优先级更高执行 */
+  const unSuspendedLanes = removeLanes(pendingLanes, suspendedLanes);
+  if (unSuspendedLanes !== NoLane) {
+    /** 调用getHighestPriorityLane 获取最高优先级lane */
+    return getHighestPriorityLane(pendingLanes);
+  } else {
+    /** 说明所有的lane都挂起了 看一下哪个lane已经决策了 （pinged） */
+    const pingedLanes = root.pingedLanes & suspendedLanes;
+    if (pingedLanes !== NoLane) {
+      return getHighestPriorityLane(pingedLanes);
+    }
+  }
+  return NoLane;
 }
 
 /**
@@ -146,6 +159,21 @@ export function markRootUpdated(root: FiberRootNode, lane: Lane) {
  */
 export function markRootFinished(root: FiberRootNode, lane: Lane) {
   root.pendingLanes = removeLanes(root.pendingLanes, lane);
+  /** 去掉 suspenedLane */
+  root.suspendedLanes = removeLanes(root.suspendedLanes, lane);
+  /** 去掉pingedLane */
+  root.pingedLanes = removeLanes(root.pingedLanes, lane);
+}
+
+/** 把某个Lane标记为挂起状态 */
+export function markRootSuspended(root: FiberRootNode, lane: Lane) {
+  root.suspendedLanes = mergeLane(root.suspendedLanes, lane);
+  root.pingedLanes = removeLanes(root.pingedLanes, lane);
+}
+
+/** 把决策后的lane放到pingedLanes */
+export function markRootPinged(root: FiberRootNode, lane: Lane) {
+  root.pingedLanes = mergeLane(root.pingedLanes, lane);
 }
 
 /** 转换函数 */

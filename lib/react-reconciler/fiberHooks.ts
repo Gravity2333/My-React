@@ -271,7 +271,7 @@ function dispatchSetState<State>(
 /** 挂载Effect */
 function mountEffect(
   create: EffectCallback,
-  deps: HookDeps
+  deps: HookDeps = null
 ): EffectCallback | void {
   /** effect 在hook中的存储方式是：
    *  hook:
@@ -298,7 +298,7 @@ function mountEffect(
 /** 更新Effect */
 function updateEffect(
   create: EffectCallback,
-  deps: HookDeps
+  deps: HookDeps = null
 ): EffectCallback | void {
   // 获取当前hook
   const hook = updateWorkInProgressHook();
@@ -440,7 +440,6 @@ function updateMemo<T>(nextCreate, deps) {
   if (areHookInputsEqual(prevDeps, deps)) {
     hook.memorizedState = [prevValue, deps];
   } else {
-  
     hook.memorizedState = [nextCreate(), deps];
   }
   return hook.memorizedState[0];
@@ -489,7 +488,6 @@ function mountDeferedValue<T>(value: T) {
 }
 
 export function use<T>(usable: Usable<T>) {
-
   if (usable !== null && typeof usable === "object") {
     // duck test
     if (typeof (usable as Thenable<T>).then === "function") {
@@ -521,8 +519,8 @@ export function bailoutHook(wip: FiberNode, renderLane: Lane) {
 }
 
 /** 重置hook on unwind 函数执行到一部分 unwind了 需要把 hook现场重置*/
-export function resetHookOnUnwind(){
-  currentRenderingFiber = null
-  workInProgressHook = null
-  currentHook = null
+export function resetHookOnUnwind() {
+  currentRenderingFiber = null;
+  workInProgressHook = null;
+  currentHook = null;
 }
