@@ -1,8 +1,6 @@
-import { ContextProviderType } from "../share/ReactTypes";
 import { FiberNode } from "./fiber";
 import { popContext } from "./fiberContext";
-import { mergeLane, requestUpdateLane } from "./fiberLanes";
-import { DidCapture, HostEffectMask, NoFlags, ShouldCapture } from "./flags";
+import { DidCapture, NoFlags, ShouldCapture } from "./flags";
 import { popSuspenseFiber } from "./suspenseContext";
 import { ContextProvider, SuspenseComponent } from "./workTag";
 
