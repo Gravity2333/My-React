@@ -341,7 +341,8 @@ export function renderRoot(
       ) {
         workInProgressSuspendedReason = NotSuspended;
         const thrownValue = workInProgressSuspenedValue;
-
+        // 标记lanes为suspended
+        markRootSuspended(root, lane);
         // 处理 被抛出的异常 并且 开启 unwind 流程 到最近的 Suspense
         handleThrownAndUnwind(
           root,
@@ -386,10 +387,6 @@ export function commitRoot(root: FiberRootNode) {
 
   const lane = root.finishedLane;
 
-  // 标记lanes为suspended
-  if (workInProgressSuspendedReason !== NotSuspended) {
-    markRootSuspended(root, lane);
-  }
   // 从root.pendingLanes去掉当前的lane
   markRootFinished(root, lane);
 

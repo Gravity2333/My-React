@@ -6,6 +6,7 @@ import {
   Lane,
   markRootFinished,
   markRootPinged,
+  markRootUpdated,
   mergeLane,
   requestUpdateLane,
 } from "./fiberLanes";
@@ -65,7 +66,7 @@ function attachPingListener(
       if (root.pingCache?.has(wakeable)) {
         root.pingCache.delete(wakeable);
       }
-      markRootFinished(root, lane);
+      markRootUpdated(root, lane);
       markRootPinged(root, lane);
       /** 由于不需要改变 childLanes 只需要ensureRootIsSchedule即可 */
       ensureRootIsScheduled(root);

@@ -137,7 +137,12 @@ export function getNextLane(root: FiberRootNode): Lane {
     /** 说明所有的lane都挂起了 看一下哪个lane已经决策了 （pinged） */
     const pingedLanes = root.pingedLanes & suspendedLanes;
     if (pingedLanes !== NoLane) {
-      return getHighestPriorityLane(pingedLanes);
+      const higestPingedLine = getHighestPriorityLane(pingedLanes);
+      /** 去掉 suspenedLane */
+      root.suspendedLanes = removeLanes(root.suspendedLanes, higestPingedLine);
+      /** 去掉pingedLane */
+      root.pingedLanes = removeLanes(root.pingedLanes, higestPingedLine);
+      return higestPingedLine;
     }
   }
   return NoLane;
@@ -159,10 +164,6 @@ export function markRootUpdated(root: FiberRootNode, lane: Lane) {
  */
 export function markRootFinished(root: FiberRootNode, lane: Lane) {
   root.pendingLanes = removeLanes(root.pendingLanes, lane);
-  /** 去掉 suspenedLane */
-  root.suspendedLanes = removeLanes(root.suspendedLanes, lane);
-  /** 去掉pingedLane */
-  root.pingedLanes = removeLanes(root.pingedLanes, lane);
 }
 
 /** 把某个Lane标记为挂起状态 */
@@ -173,7 +174,7 @@ export function markRootSuspended(root: FiberRootNode, lane: Lane) {
 
 /** 把决策后的lane放到pingedLanes */
 export function markRootPinged(root: FiberRootNode, lane: Lane) {
-  root.pingedLanes = mergeLane(root.pingedLanes, lane);
+  root.pingedLanes = mergeLane(root.pingedLanes, lane & root.suspendedLanes);
 }
 
 /** 转换函数 */
