@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+</head>
+
+<body>
+    <script>
+        const mockFetch = (url) => new Promise(r => setTimeout(() => {
+            r(url)
+        }, 1000))
+
+        function runAsync(fn) {
+            const results = [];
+            const errors = [];
+            let fetchIndex = 0;
+            const SyncFetch = (url) => {
+                if (results[fetchIndex]) {
+                    return results[fetchIndex++];
+                } else if (errors[fetchIndex]) {
+                    throw errors[fetchIndex];
+                } else {
+                    throw mockFetch(url);
+                }
+            };
+
+            const _runFn = () => {
+                try {
+                    fetchIndex = 0
+                    fn(SyncFetch);
+                } catch (err) {
+                    if (err instanceof Promise) {
+                        err.then(
+                            (val) => {
+                                results[fetchIndex++] = val;
+                                _runFn()
+                            },
+                            (reason) => {
+                                errors[fetchIndex++] = reason;
+                                _runFn()
+                            }
+                        );
+                    } else {
+                        throw err
+                    }
+                }
+            }
+
+            _runFn()
+
+        }
+
+
+        runAsync((SyncFetch) => {
+            const res1 = SyncFetch("url1")
+            const res2 = SyncFetch("url2")
+            const res3 = SyncFetch("url3")
+
+            console.log(res1, res2, res3)
+        })
+    </script>
+</body>
+
+</html>

@@ -77,7 +77,7 @@ type SuspenedReason =
 
 /** wip被suspense的原因 */
 let workInProgressSuspendedReason: SuspenedReason = NotSuspended;
-/** 刮起时 获取的真正的抛出的值 */
+/** 挂起时 获取的真正的抛出的值 */
 let workInProgressSuspenedValue: any = null;
 /**
  * 从当前fiberNode找到root节点 并且更新沿途fiber的childLanes
@@ -171,6 +171,7 @@ export function performSyncWorkOnRoot(root: FiberRootNode) {
     case RootDidNotComplete:
       /** 挂起lane */
       markRootSuspended(root, wipRootRenderLane);
+      ensureRootIsScheduled(root);
       const _thrownValue = workInProgressSuspenedValue;
       workInProgressSuspenedValue = null;
       if (
@@ -183,7 +184,6 @@ export function performSyncWorkOnRoot(root: FiberRootNode) {
         /** 由于错误挂起  ERR boundary方式 */
         throw _thrownValue;
       }
-      break;
     default:
     // TODO Suspense的情况
   }
@@ -220,6 +220,7 @@ export function performConcurrentWorkOnRoot(
     case RootDidNotComplete:
       /** 挂起lane */
       markRootSuspended(root, wipRootRenderLane);
+      ensureRootIsScheduled(root);
       const _thrownValue = workInProgressSuspenedValue;
       workInProgressSuspenedValue = null;
       if (
@@ -384,11 +385,16 @@ export function commitRoot(root: FiberRootNode) {
   if (finishedWork === null) return;
 
   const lane = root.finishedLane;
-  root.finishedWork = null;
-  root.finishedLane = NoLane;
 
+  // 标记lanes为suspended
+  if (workInProgressSuspendedReason !== NotSuspended) {
+    markRootSuspended(root, lane);
+  }
   // 从root.pendingLanes去掉当前的lane
   markRootFinished(root, lane);
+
+  root.finishedWork = null;
+  root.finishedLane = NoLane;
 
   /** 设置调度 执行passiveEffect */
   /** 真正执行会在commit之后 不影响渲染 */
