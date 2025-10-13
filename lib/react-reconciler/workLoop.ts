@@ -23,6 +23,7 @@ import {
   markRootUpdated,
   mergeLane,
   NoLane,
+  removeLanes,
   SyncLane,
 } from "./fiberLanes";
 import scheduler, { PriorityLevel } from "../scheduler";
@@ -126,6 +127,10 @@ export function ensureRootIsScheduled(root: FiberRootNode) {
   const highestPriorityLane = getNextLane(root);
   // 判断，如果不存在优先级 说明没有任务需要继续调度了 直接returna
   if (highestPriorityLane === NoLane) return;
+  /** 去掉 suspenedLane */
+  root.suspendedLanes = removeLanes(root.suspendedLanes, highestPriorityLane);
+  /** 去掉pingedLane */
+  root.pingedLanes = removeLanes(root.pingedLanes, highestPriorityLane);
   // 批处理更新, 微任务调用更新
   if (highestPriorityLane === SyncLane) {
     scheduleSyncCallback(performSyncWorkOnRoot.bind(null, root));

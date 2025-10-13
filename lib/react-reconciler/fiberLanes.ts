@@ -138,10 +138,6 @@ export function getNextLane(root: FiberRootNode): Lane {
     const pingedLanes = root.pingedLanes & suspendedLanes;
     if (pingedLanes !== NoLane) {
       const higestPingedLine = getHighestPriorityLane(pingedLanes);
-      /** 去掉 suspenedLane */
-      root.suspendedLanes = removeLanes(root.suspendedLanes, higestPingedLine);
-      /** 去掉pingedLane */
-      root.pingedLanes = removeLanes(root.pingedLanes, higestPingedLine);
       return higestPingedLine;
     }
   }
