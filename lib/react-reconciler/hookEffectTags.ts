@@ -7,6 +7,13 @@
  * 这对于性能优化非常有用，因为它允许开发人员在不影响渲染性能的情况下执行副作用操作。
  */
 export const Passive = 0b0010;
+/** Layout Effect 和布局相关的副作用 ( useLayputEffect )
+ *  其unMount会在Mutation阶段
+ *  Mount 会在 Layout Commit DFS阶段
+ *
+ * 注意 Layout Effect 不会进入 root.pendingPassiveEffect
+ */
+export const Layout = 0b0100;
 // 当前hook存在effect需要处理
 export const HookHasEffect = 0b0001;
 

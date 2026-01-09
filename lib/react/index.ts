@@ -99,6 +99,11 @@ export function useEffect(create: EffectCallback, deps: HookDeps) {
   return dispatcher.useEffect(create, deps);
 }
 
+export function useLayoutEffect(create: EffectCallback, deps: HookDeps) {
+  const dispatcher = resolveDispatcher();
+  return dispatcher.useLayoutEffect(create, deps);
+}
+
 export function useTransition() {
   const dispatcher = resolveDispatcher();
   return dispatcher.useTransition();
@@ -141,6 +146,7 @@ const React = {
   createElement,
   useState,
   useEffect,
+  useLayoutEffect,
   useTransition,
   useDeferedValue,
   useCallback,

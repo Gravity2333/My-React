@@ -1,19 +1,37 @@
-import React from "../../../lib/react";
+import React, { useEffect, useLayoutEffect, useRef } from "../../../lib/react";
 
 const WelcomePage = () => {
+  const welcomeRef = useRef<any>(null);
+
+  useLayoutEffect(() => {
+    console.log("layout", welcomeRef);
+    return () => {
+      console.log("destory layout", welcomeRef);
+    };
+  }, []);
+
+  useEffect(() => {
+   console.log("passive", welcomeRef);
+    return () => {
+      console.log("passive layout", welcomeRef);
+    };
+  }, []);
+
   return (
-    <div style={pageStyle}>
+    <div style={pageStyle} ref={welcomeRef}> 
       <div style={leftPanelStyle}>
         <h1 style={titleStyle}>Welcome to My-React!</h1>
         <p style={subtitleStyle}>
-          A lightweight React clone with core features like createElement, useState, useEffect, and more.
+          A lightweight React clone with core features like createElement,
+          useState, useEffect, and more.
         </p>
         <div style={sectionStyle}>
           <h2 style={sectionTitleStyle}>What is My-React?</h2>
           <p style={sectionTextStyle}>
-            My-React is a lightweight clone of React. It includes essential features like virtual DOM creation, state
-            management with hooks, and task scheduling. The main goal is to understand the core principles behind React
-            and its rendering lifecycle.
+            My-React is a lightweight clone of React. It includes essential
+            features like virtual DOM creation, state management with hooks, and
+            task scheduling. The main goal is to understand the core principles
+            behind React and its rendering lifecycle.
           </p>
         </div>
       </div>
@@ -27,7 +45,9 @@ const WelcomePage = () => {
         </ul>
         <div style={footerStyle}>
           <h3 style={footerTitleStyle}>Get Started</h3>
-          <p style={footerTextStyle}>To get started, follow the setup instructions below:</p>
+          <p style={footerTextStyle}>
+            To get started, follow the setup instructions below:
+          </p>
           <pre style={codeBlockStyle}>
             {`1. Install dependencies:
    npm install

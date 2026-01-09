@@ -22,8 +22,19 @@ import {
 } from "./workTag";
 import { FCUpdateQueue } from "./updateQueue";
 import { Effect, EffectCallback } from "./fiberHooks";
-import { HookEffectTag, HookHasEffect } from "./hookEffectTags";
+import { HookEffectTag, HookHasEffect, Layout } from "./hookEffectTags";
 import { removeLanes } from "./fiberLanes";
+
+/**
+ * 本模块用来处理 Commit 阶段
+ * react更新阶段分为   render ---------------------> commit
+ *           beginwork completeWork          Mutation      Layout
+ * Commit先后分为 Mutation Commit 和 Layout Commit阶段
+ * Commit阶段是有副作用的 不可打断 和render阶段区分
+ * Mutation = （原地）改变已有事物的内部状态 负责处理DOM的挂在，删除，属性更新，副作用收集，Ref卸载
+ * Layout = 布局 / 排版 / 空间结构 负责Ref挂载 执行LayoutEffect 再次阶段可以获取到最新的DOM对象，但是可能影响性能
+ * 在Ref阶段可以获取最新的 Ref useEffect反而不一定能获取最新的Ref
+ */
 
 /** commit回调类型 */
 type CommitCallback = (finishedWork: FiberNode, root: FiberRootNode) => void;
@@ -60,7 +71,14 @@ function commitEffect(
   };
 }
 
-/** 用来处理 Mutation副作用 [Placement | Update | ChildDeletion // TODO PassiveEffect] */
+/**
+ * commitMutationEffectsOnFiber：
+ * 用来处理 Mutation副作用 [Placement | Update | ChildDeletion]
+ * 负责处理DOM的挂在，删除，属性更新，副作用收集，Ref卸载
+ * Mutation Commit 是 React 真正“修改宿主环境”的阶段
+ * @param finishedWork
+ * @param root
+ */
 const commitMutationEffectsOnFiber: CommitCallback = (finishedWork, root) => {
   // 处理每个节点的Effect
   // 获取节点的flags
@@ -80,7 +98,11 @@ const commitMutationEffectsOnFiber: CommitCallback = (finishedWork, root) => {
     finishedWork.flags &= ~Update;
   }
 
-  /** 处理节点删除 */
+  /**
+   * 处理节点删除
+   *  注意，节点删除指的是，当前节点包含需要删除的节点，不是当前节点被删除
+   *  如果某节点有次标记 就需要删除其记录在deletion数组中的子Fiber节点对应的真实DOM
+   */
   if ((flags & ChildDeletion) !== NoFlags) {
     const deletion = finishedWork.delections;
     deletion.forEach((deleteOldFiber) => {
@@ -89,9 +111,19 @@ const commitMutationEffectsOnFiber: CommitCallback = (finishedWork, root) => {
     finishedWork.flags &= ~ChildDeletion;
   }
 
-  /** 处理被动副作用 */
+  /**
+   * 运行 Layout Effect Destory
+   */
+  if ((finishedWork.updateQueue as FCUpdateQueue<any>)?.lastEffect) {
+    commitHookEffectListDestory(
+      Layout | HookHasEffect,
+      (finishedWork.updateQueue as FCUpdateQueue<any>).lastEffect
+    );
+  }
+
+  /** 收集副作用 */
   if ((flags & PassiveEffect) !== NoFlags) {
-    // 存在被动副作用
+    // 收集被动副作用
     commitPassiveEffect(finishedWork, root, "update");
     // 去掉标记
     finishedWork.lanes = removeLanes(finishedWork.lanes, PassiveEffect);
@@ -135,11 +167,34 @@ const commitLayoutEffectsOnFiber: CommitCallback = (finishedWork) => {
     saftyAttachRef(finishedWork);
     finishedWork.flags &= ~Ref; // 此时 才去掉Ref的Flag标记
   }
+
+  /** 处理 Layout Effect的 Mount
+   *  注意 Layout Effect的Mount 一定在 装载Ref之后 保证能使用Ref
+   *  Layout Effect的卸载一定在卸载Ref之前 保证卸载函数中也可以使用Ref
+   */
+  if ((finishedWork.updateQueue as FCUpdateQueue<any>)?.lastEffect) {
+    commitHookEffectListCreate(
+      Layout | HookHasEffect,
+      (finishedWork.updateQueue as FCUpdateQueue<any>).lastEffect
+    );
+  }
 };
 
-/** 收集被动副作用，这个函数可能会在
- *  1. commitMutationEffectsOnFiber调用
- *  2.  在delection时调用
+/**
+ * commitPassiveEffect: 收集被动副作用，这个函数可能会在
+ * 1. commitMutationEffectsOnFiber调用
+ * 2. 在delection时调用
+ * 注意 这个函数是把Mutation阶段的副作用加入到root.PendingPassiveEffect
+ * Mutation Effect的执行会交给 scheduler调度 优先级更低
+ *
+ * My-React中 副作用包含2种 Passive Effect 和布局无关的副作用
+ *                       LayoutEffet 和布局相关的副作用
+ * PassiveEffect的FnUpdateQueue 会被加入到root.pendingPassiveEffecr
+ * LayoutEffect的FnUpdateQueue 不会，其会在Mutation阶段处理Unmount 在 Layout阶段处理Mount
+ * @param fiber
+ * @param root
+ * @param type
+ * @returns
  */
 function commitPassiveEffect(
   fiber: FiberNode,
@@ -155,7 +210,16 @@ function commitPassiveEffect(
   }
 }
 
-/** 处理Placement */
+/**
+ * 处理Placement
+ *  处理放置/插入 节点
+ *  当前节点的DOM还没有插入到DOM树，此时需要找到当前Fiber节点的真实DOM父节点，和真实DOM sibling节点
+ *  步骤
+ *   1 找到真实dom节点对应的父 Fiber => getHostParent
+ *   2 找到真实dom节点对应的兄弟 Fiver => getHostSibling
+ *   3 调用 insertBefore BOM函数插入 DOM元素
+ * @param finishedWork
+ */
 function commitPlacement(finishedWork: FiberNode) {
   /** 获取finishedWork的hostparent 用来挂载finishedWork对应的DOM （finishedWork可能也不是Host 后面有处理） */
   const hostParent = getHostParent(finishedWork) as Container;
@@ -172,7 +236,12 @@ function commitPlacement(finishedWork: FiberNode) {
   }
 }
 
-/** 处理update副作用 */
+/**
+ * 处理Update副作用
+ * 如果是是文本就替换 textNode的nodeValue
+ * 如果是host节点 比如 div span 就更新属性值
+ * @param fiber
+ */
 function commitUpdate(fiber: FiberNode) {
   if (fiber.tag === HostText) {
     fiber.stateNode.nodeValue = fiber.memorizedProps.content;
@@ -210,7 +279,11 @@ function hideOrUnhideAllChilden(wip: FiberNode, hidden: boolean) {
   }
 }
 
-/** 删除节点 */
+/**
+ * 删除节点 废弃 用commitDeletion替代 更好理解一些
+ * @param fiber
+ * @param root
+ */
 function commitDeletion_NonRecruison(fiber: FiberNode, root: FiberRootNode) {
   const parent = getHostParent(fiber);
   if (
@@ -294,15 +367,31 @@ function commitDeletion_NonRecruison(fiber: FiberNode, root: FiberRootNode) {
   fiber.sibling = null;
 }
 
-function commitDeletion(fiber: FiberNode, root: FiberRootNode) {
-  const container = getHostParent(fiber);
+/**
+ * commitDeletion: 从父节点上删除子节点对应的 DOM
+ * 1. 找到待删除节点的父节点
+ * 2. 调用_deleteNodeFromContainer 递归删除这个节点
+ * @param needToDelFiber 待删除的子节点
+ * @param root 根节点
+ */
+function commitDeletion(needToDelFiber: FiberNode, root: FiberRootNode) {
+  const container = getHostParent(needToDelFiber);
   if (container) {
-    deleteNodeFromContainer(container, fiber, root);
+    _deleteNodeFromContainer(container, needToDelFiber, root);
   }
 }
 
-/** 递归的方式删除节点 */
-function deleteNodeFromContainer(
+/**
+ * 递归的方式删除节点
+ * 这个函数的思路和insertOrAppendChildNode 一样
+ * 1. 如果待删除节点是个Host节点 直接调用removeChild删除
+ * 2. 如果这个节点是个虚拟节点 比如 FunctionComponent 那么递归删除其第一层的HostComponent / HostText
+ * @param container
+ * @param childToDelete
+ * @param root
+ * @returns
+ */
+function _deleteNodeFromContainer(
   container: Container,
   childToDelete: FiberNode,
   root: FiberRootNode
@@ -326,19 +415,29 @@ function deleteNodeFromContainer(
   } else {
     /** 非host节点，递归删除 */
     if (childToDelete.tag === FunctionComponent) {
+      /** 卸载Layout Effect */
+      if ((childToDelete.updateQueue as FCUpdateQueue<any>)?.lastEffect) {
+        commitHookEffectListUnmount(
+          Layout,
+          (childToDelete.updateQueue as FCUpdateQueue<any>).lastEffect
+        );
+      }
+
       /** 函数组件的情况下，需要收集Effect */
       commitPassiveEffect(childToDelete, root, "unmount");
     }
     let deleteNodeChild = childToDelete.child;
     while (deleteNodeChild !== null) {
-      deleteNodeFromContainer(container, deleteNodeChild, root);
+      _deleteNodeFromContainer(container, deleteNodeChild, root);
       deleteNodeChild = deleteNodeChild.sibling;
     }
   }
 }
 
-/** 获取HostParent
- *  获取当前节点的HostComponent/HostRoot parent
+/**
+ * getHostParent: 获取当前节点的真实DOM对应的Fiber节点
+ * @param fiber
+ * @returns
  */
 function getHostParent(fiber: FiberNode): Element {
   let node = fiber.return;
@@ -357,6 +456,7 @@ function getHostParent(fiber: FiberNode): Element {
   }
   return null;
 }
+
 /**
  * 查找fiber的sibling host节点 （难点）
  *  这里注意，sibling节点可能是不同级的
@@ -413,7 +513,13 @@ function getHostSibling(fiber: FiberNode): Element {
 }
 
 /**
+ * insertOrAppendPlacementNodeIntoConatiner
  * 插入或者追加finishwork节点到hostParent(container)中
+ * 为什么是追加 或者 插入
+ * 当待插入的节点存在已经插入的真实DOM节点，此时调用parentDOM.insertBefore(current,Sibling DOM)插入节点
+ * 当不存在Sibling时，调用parentDOM.append(current)追加节点
+ * 如果当前待插入节点是个虚拟节点 也就是 非HostCompoent / HostText 比如是个 FunctionComponent 那么此时就需要
+ *  遍历其所有第一层子节点，并且递归调用本函数！
  * @param finishedWork
  * @param hostParent
  * @param hostSibling
@@ -451,7 +557,7 @@ function commitHookEffectList(
 ) {
   let currentEffect = lastEffect.next;
   do {
-    if ((flags & currentEffect.tags) === flags) {
+    if ((currentEffect.tags & flags) === flags) {
       // flag必须完全相等 执行callback
       callback(currentEffect);
     }

@@ -5,13 +5,17 @@ import { Context, Usable } from "../share/ReactTypes";
 export interface Dispatcher {
   useState: <T>(initialState: T | (() => T)) => [T, Dispatch<T>];
   useEffect: (create: EffectCallback, deps: HookDeps) => EffectCallback | void;
+  useLayoutEffect: (
+    create: EffectCallback,
+    deps: HookDeps
+  ) => EffectCallback | void;
   useTransition: () => [boolean, (callback: () => void) => void];
   useDeferedValue: <T>(T) => T;
   useRef: <T>(initialValue: T) => { current: T };
   useMemo: <T>(nextCreate: () => T, deps: HookDeps) => T;
   useCallback: <T>(callback: T, deps: HookDeps) => T;
   useContext: <T>(context: Context<T>) => T;
-  use: <T>(usable: Usable<T>) => void
+  use: <T>(usable: Usable<T>) => void;
 }
 
 /** 共享的 当前的Dispatcher */

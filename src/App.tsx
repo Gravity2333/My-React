@@ -1,4 +1,10 @@
-import React, { useState, useTransition } from "../lib/react";
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useTransition,
+} from "../lib/react";
 import Counter from "./components/Counter";
 import DeferedValueDemo from "./components/DeferedValueDemo";
 import Input from "./components/Input";
@@ -127,6 +133,10 @@ const App = () => {
     | "suspense-lazy"
   >("welcome");
 
+  const appContainerRef = useRef<any>(null);
+
+  const [list, setList] = useState(["hello", "react", "test", "list"]);
+
   const content = (() => {
     switch (type) {
       case "welcome":
@@ -150,8 +160,19 @@ const App = () => {
     }
   })();
 
+  // useLayoutEffect(() => {
+  //   console.log("layout", appContainerRef);
+  //   return () => {
+  //     console.log("destory layout", appContainerRef);
+  //   };
+  // }, []);
+
+  // useEffect(() => {
+  //   console.log("passive", appContainerRef);
+  // }, []);
+
   return (
-    <div style={styles.appContainer}>
+    <div ref={appContainerRef} style={styles.appContainer}>
       <nav style={styles.navbar}>
         <ul style={styles.menu}>
           {menuItems.map(({ key, label, value }) => (
@@ -169,6 +190,25 @@ const App = () => {
       <div style={styles.memoWrapper}>
         <MemoComp />
       </div>
+
+      <ul>
+        {list.map((item) => (
+          <li key={item}>
+            {item}{" "}
+            <span
+              style={{
+                color: "red",
+                cursor: "pointer",
+              }}
+              onClick={() => {
+                setList((prev) => prev.filter((i) => i !== item));
+              }}
+            >
+              click to delete this li
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 };

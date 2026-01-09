@@ -15,7 +15,7 @@ import {
   requestUpdateLane,
 } from "./fiberLanes";
 import { Flags, PassiveEffect } from "./flags";
-import { HookEffectTag, HookHasEffect, Passive } from "./hookEffectTags";
+import { HookEffectTag, HookHasEffect, Layout, Passive } from "./hookEffectTags";
 import { tractUseThenable } from "./thenable";
 import {
   Action,
@@ -84,7 +84,8 @@ export function renderWithHooks(
     // update
     currentDispatcher.current = {
       useState: updateState,
-      useEffect: updateEffect,
+      useEffect: updatePassiveEffect,
+      useLayoutEffect: updateLayoutEffect,
       useTransition: updateTransition,
       useDeferedValue: updateDeferedValue,
       useRef: updateRef,
@@ -97,7 +98,8 @@ export function renderWithHooks(
     // mount
     currentDispatcher.current = {
       useState: mountState,
-      useEffect: mountEffect,
+      useEffect: mountPassiveEffect,
+      useLayoutEffect: mountLayoutEffect,
       useTransition: mountTransition,
       useDeferedValue: mountDeferedValue,
       useRef: mountRef,
@@ -268,8 +270,8 @@ function dispatchSetState<State>(
   scheduleUpdateOnFiber(fiber, lane);
 }
 
-/** 挂载Effect */
-function mountEffect(
+/** 挂载 Passive Effect */
+function mountPassiveEffect(
   create: EffectCallback,
   deps: HookDeps = null
 ): EffectCallback | void {
@@ -295,8 +297,35 @@ function mountEffect(
   );
 }
 
-/** 更新Effect */
-function updateEffect(
+/** 挂载 Layout Effect */
+function mountLayoutEffect(
+  create: EffectCallback,
+  deps: HookDeps = null
+): EffectCallback | void {
+  /** effect 在hook中的存储方式是：
+   *  hook:
+   *     memorizedState = Effect
+   *     updateQueue = null
+   *     next = nextHook
+   *  fiber:
+   *     updateQueue -> Effect1 -next-> Effect2 -...
+   */
+
+  // 获取到hook
+  const hook = mountWorkInProgressHook();
+  // 给fiber设置PassiveEffect 表示存在被动副作用
+  (currentRenderingFiber as FiberNode).flags |= PassiveEffect;
+  hook.memorizedState = pushEffect(
+    // 初始化状态下，所有的useEffect都执行，所以这里flag设置为   Passive|HookHasEffect
+    Layout | HookHasEffect,
+    create,
+    null,
+    deps
+  );
+}
+
+/** 更新Pasive Effect */
+function updatePassiveEffect(
   create: EffectCallback,
   deps: HookDeps = null
 ): EffectCallback | void {
@@ -317,6 +346,37 @@ function updateEffect(
     /** 不等 表示hook有Effect */
     hook.memorizedState = pushEffect(
       Passive | HookHasEffect, // 注意这里是 Passive 是Effect的tag 区分fiber的tag PassiveEffect
+      create,
+      // 前一个副作用hook的destory
+      destory,
+      deps
+    );
+  }
+  (currentRenderingFiber as FiberNode).flags |= PassiveEffect;
+}
+
+/** 更新LayoutEffect */
+function updateLayoutEffect(
+  create: EffectCallback,
+  deps: HookDeps = null
+): EffectCallback | void {
+  // 获取当前hook
+  const hook = updateWorkInProgressHook();
+  const prevDeps = hook.memorizedState.deps;
+  const destory = hook.memorizedState.destory;
+  if (areHookInputsEqual(prevDeps, deps)) {
+    // 相等 pushEffect 并且设置tag为Passive 被动副作用
+    hook.memorizedState = pushEffect(
+      Layout,
+      create,
+      // 前一个副作用hook的destory
+      destory,
+      deps
+    );
+  } else {
+    /** 不等 表示hook有Effect */
+    hook.memorizedState = pushEffect(
+      Layout | HookHasEffect, // 注意这里是 Passive 是Effect的tag 区分fiber的tag PassiveEffect
       create,
       // 前一个副作用hook的destory
       destory,

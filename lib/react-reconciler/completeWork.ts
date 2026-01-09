@@ -17,6 +17,14 @@ import { NoLane } from "./fiberLanes";
 import { popContext } from "./fiberContext";
 import { popSuspenseFiber } from "./suspenseContext";
 
+/**
+ * 用来标记更新
+ * @param fiber
+ */
+function markUpdate(fiber: FiberNode) {
+  fiber.flags |= Update;
+}
+
 /** 归的过程 主要逻辑有
  * 1. 不能复用的DOM创建 赋给stateNode
  * 2. 连接父子节点
@@ -40,7 +48,9 @@ export function completeWork(wip: FiberNode) {
         //   wip.flags |= Update;
         // }
         // 不要这样写 会导致事件处理函数的闭包陷阱 我们需要在每次更新的时候 update新的event
-        wip.flags |= Update;
+
+        /** 只要是复用 就标记更新 */
+        markUpdate(wip);
       } else {
         // mount
         // 挂载阶段，直接创建DOM,保存到stateNode
@@ -58,9 +68,9 @@ export function completeWork(wip: FiberNode) {
       return null;
     case HostText:
       if (currentFiber && currentFiber.stateNode) {
-        // update
+        // 只要内容不一样，就markUpdate
         if (currentFiber.memorizedProps?.content !== pendingProps?.content) {
-          wip.flags |= Update;
+          markUpdate(wip);
         }
       } else {
         // mount
@@ -112,7 +122,7 @@ export function completeWork(wip: FiberNode) {
       popSuspenseFiber();
       // 冒泡
       bubbleProperties(wip);
-      return 
+      return;
     default:
       console.warn("未处理的completeWork类型！");
   }
