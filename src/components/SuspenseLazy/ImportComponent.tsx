@@ -10,7 +10,6 @@ function AsyncComponent() {
   }, []);
 
   const LazyComponent = useMemo(() => {
-
     const ChildComponent = getChildComponent() as any;
     console.log("AsyncComponent");
     console.log("useMemo回调执行啦");
@@ -18,9 +17,10 @@ function AsyncComponent() {
     return (
       <>
         {/* @ts-ignore */}
-        <Suspense fallback={<div>内层</div>} tag="INNER SUSPENSE">
+        {/* <Suspense fallback={<div>内层</div>} tag="INNER SUSPENSE">
           <ChildComponent tag="INNER LAZY" />
-        </Suspense>
+        </Suspense> */}
+        <>test</>
       </>
     );
   }, []);

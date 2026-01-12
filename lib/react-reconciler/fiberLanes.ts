@@ -145,6 +145,33 @@ export function getNextLane(root: FiberRootNode): Lane {
 }
 
 /**
+ *  和挂起&恢复 相关的lanes操作
+ *  这部分包含root上的几条lanes
+ *  1. pendingLanes 即 可以正常调度的lane
+ *  2. suspendedLanes 挂起的lane 在Promise决策之前 不可以调度
+ *  3. pingedLanes 恢复的lane Promise已经决策，可以被调度
+ *
+ *  解决什么问题？
+ *  当一个lane对应的任务被挂起，此任务会卡在render阶段，不会继续commit
+ *  此时，react会重新调度，查找下一个优先级的lane
+ *  如果当前被挂起的任务已经是优先级最高的lane，那么这个已经被挂起的任务会被反复的调度，低优先级的任务被阻塞，直到promise决策！
+ *
+ *  如何解决？
+ *  当一个lane对应的render任务被挂起后，这个lane会被加入到 suspendedLanes 上，由于commit阶段没执行，所以挂起的lane不会从pendingLane上去掉！
+ *  当Promise决策之后，这个lane会被挂到pingedLanes上，表示这个lane已经可以恢复调度
+ *
+ *  当Promise决策之后，会把对应的lane 加入到pingedLanes和pendingLanes
+ *  对应的函数为 markRootPinged 和 markRootUpdated
+ *
+ *  getNextLane调度的时候，会优先调度没被挂起过的lane，如果没有未挂起过的lane 就去调度那些已经pingedLanes
+ *  下面重点来了，当任意一个渲染任务被完整执行，就会调用markRootFinished 此时pingdedLanes和suspendedLanes会被置为Nolane
+ *  为什么？ 因为一旦一个完整的更新被执行，此时的fiber结构可能改变，有可能已经不需要这个被挂起的组件了！ 此时的pingedLanes和suspendLanes可能都不准确了
+ *  当下一次更新，如果还是更新到阻塞的lane，就会重新设置suspendedLanes 来保证suspendedLanes和pingdLaned 一直是正确的 最新的
+ *
+ *  回归本质，suspendedLanes 和 pingedLanes 只是为了不让挂起的更新 卡住 其他更新！
+ */
+
+/**
  * 把某个更新的lane加入到root.pendingLanes
  * @param root
  * @param lane
@@ -160,6 +187,10 @@ export function markRootUpdated(root: FiberRootNode, lane: Lane) {
  */
 export function markRootFinished(root: FiberRootNode, lane: Lane) {
   root.pendingLanes = removeLanes(root.pendingLanes, lane);
+
+  // 重制
+  root.suspendedLanes = NoLane;
+  root.pingedLanes = NoLane;
 }
 
 /** 把某个Lane标记为挂起状态 */

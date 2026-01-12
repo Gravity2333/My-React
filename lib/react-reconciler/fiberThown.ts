@@ -4,15 +4,12 @@ import { Wakeable } from "../share/ReactTypes";
 import { FiberNode, FiberRootNode } from "./fiber";
 import {
   Lane,
-  markRootFinished,
   markRootPinged,
   markRootUpdated,
-  mergeLane,
-  requestUpdateLane,
 } from "./fiberLanes";
 import { ShouldCapture } from "./flags";
 import { getNearestSuspenseFiber } from "./suspenseContext";
-import { ensureRootIsScheduled, scheduleUpdateOnFiber } from "./workLoop";
+import { scheduleUpdateOnFiber } from "./workLoop";
 
 /** 用来处理被抛出的thenable对象,当fulfilled的时候重新渲染 */
 
@@ -69,7 +66,7 @@ function attachPingListener(
       markRootUpdated(root, lane);
       markRootPinged(root, lane);
       /** 由于不需要改变 childLanes 只需要ensureRootIsSchedule即可 */
-      ensureRootIsScheduled(root);
+      scheduleUpdateOnFiber(wip,lane);
     };
 
     wakeable.then(ping, ping);
