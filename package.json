@@ -7,7 +7,8 @@
     "start": "npx webpack-dev-server --config ./config/webpack.dev.js",
     "start: demo": "npx webpack-dev-server --config ./config/webpack.dev.js",
     "build": "npx webpack --config ./config/webpack.build.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint src --ext .ts,.tsx"
   },
   "keywords": [],
   "author": "Gravity2333",
@@ -17,7 +18,13 @@
     "@babel/preset-env": "^7.26.9",
     "@babel/preset-react": "^7.26.3",
     "@babel/preset-typescript": "^7.27.0",
+    "@typescript-eslint/eslint-plugin": "^7.14.1",
+    "@typescript-eslint/parser": "^7.14.1",
     "babel-loader": "^10.0.0",
+    "eslint": "^8.57.0",
+    "eslint-formatter-html": "^2.7.3",
+    "eslint-formatter-table": "^7.32.1",
+    "eslint-plugin-react": "^7.34.2",
     "html-webpack-plugin": "^5.6.0",
     "ts-loader": "^9.5.1",
     "webpack": "^5.91.0",
